@@ -1,0 +1,3 @@
+import type{Plan}from'../types'; import{Button}from'./ui';
+export function PlanCard({plan,recommended,onSelect}:{plan:Plan;recommended?:boolean;onSelect:()=>void}){return <article className={`plan-card ${recommended?'recommended':''}`}>{recommended&&<span className="recommend">Recomendado</span>}<h2>{plan.name}</h2><div className="price"><strong>R$ {Number(plan.price).toLocaleString('pt-BR',{minimumFractionDigits:0})}</strong><span>/mês</span></div><p>{plan.slug==='free'?'Recursos essenciais para começar.':'Mais recursos para acelerar seu trabalho.'}</p><Button onClick={onSelect}>{plan.slug==='free'?'Começar grátis':'Assinar Pro'}</Button></article>}
+

@@ -1,0 +1,7 @@
+import type{ButtonHTMLAttributes,InputHTMLAttributes,ReactNode}from'react';
+export function Button({className='',...props}:ButtonHTMLAttributes<HTMLButtonElement>){return <button className={`button ${className}`} {...props}/>}
+export function Input(props:InputHTMLAttributes<HTMLInputElement>){return <input className="input" {...props}/>}
+export function LoadingState(){return <div className="state">Carregando…</div>}; export function ErrorState({message='Não foi possível carregar.'}:{message?:string}){return <div className="state error">{message}</div>}; export function EmptyState({title='Em breve',description='Estamos preparando este espaço.'}:{title?:string;description?:string}){return <div className="empty"><span>✦</span><h3>{title}</h3><p>{description}</p></div>}
+export function Avatar({name,url}:{name:string;url?:string|null}){return url?<img className="avatar" src={url} alt={name}/>:<div className="avatar avatar-fallback">{name.slice(0,2).toUpperCase()}</div>}
+export function StatusBadge({children}:{children:ReactNode}){return <span className="badge">{children}</span>}; export function Modal({children}:{children:ReactNode}){return <div role="dialog" className="modal">{children}</div>}; export function ConfirmDialog({children}:{children:ReactNode}){return <Modal>{children}</Modal>}; export function Select(props:React.SelectHTMLAttributes<HTMLSelectElement>){return <select className="input" {...props}/>}
+

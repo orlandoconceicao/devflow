@@ -1,0 +1,2 @@
+import{Component,type ErrorInfo,type ReactNode}from'react';
+export class ErrorBoundary extends Component<{children:ReactNode},{failed:boolean}>{state={failed:false};static getDerivedStateFromError(){return{failed:true}}componentDidCatch(error:Error,info:ErrorInfo){console.error('UI error',error.name,info.componentStack)}render(){return this.state.failed?<main className="state"><h1>Algo deu errado.</h1><p>A aplicação encontrou um erro inesperado.</p><button className="button" onClick={()=>location.reload()}>Tentar novamente</button></main>:this.props.children}}

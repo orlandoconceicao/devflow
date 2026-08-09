@@ -1,0 +1,4 @@
+-r backend/requirements.txt
+coverage==7.10.4
+ruff==0.12.10
+pip-audit==2.9.0
