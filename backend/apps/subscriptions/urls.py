@@ -1,3 +1,27 @@
 from django.urls import path
-from .views import PlanListView,SubscriptionView,billing_payments,billing_portal,billing_subscription,billing_usage,cancel,checkout,payment_webhook,reactivate
-urlpatterns=[path("plans/",PlanListView.as_view()),path("subscription/",SubscriptionView.as_view()),path("billing/subscription/",billing_subscription),path("billing/usage/",billing_usage),path("billing/payments/",billing_payments),path("billing/checkout/",checkout),path("billing/portal/",billing_portal),path("billing/cancel/",cancel),path("billing/reactivate/",reactivate),path("webhooks/payments/<str:provider>/",payment_webhook)]
+
+from .views import (
+    PlanListView,
+    SubscriptionView,
+    billing_payments,
+    billing_portal,
+    billing_subscription,
+    billing_usage,
+    cancel,
+    checkout,
+    payment_webhook,
+    reactivate,
+)
+
+urlpatterns = [
+    path("plans/", PlanListView.as_view()),
+    path("subscription/", SubscriptionView.as_view()),
+    path("billing/subscription/", billing_subscription),
+    path("billing/usage/", billing_usage),
+    path("billing/payments/", billing_payments),
+    path("billing/checkout/", checkout),
+    path("billing/portal/", billing_portal),
+    path("billing/cancel/", cancel),
+    path("billing/reactivate/", reactivate),
+    path("webhooks/payments/<str:provider>/", payment_webhook),
+]

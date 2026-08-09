@@ -30,6 +30,11 @@ services:
       DB_PASSWORD: ${DOCKER_DB_PASSWORD:-devflow-local-only}
     ports: ["${BACKEND_PORT:-8000}:8000"]
     volumes: ["./backend:/app", "task_media:/app/media"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
     depends_on:
       db: {condition: service_healthy}
       redis: {condition: service_healthy}
@@ -59,10 +64,12 @@ services:
   frontend:
     build: {context: ./frontend, dockerfile: Dockerfile.dev}
     environment:
-      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000/api}
+      VITE_API_URL: ${VITE_API_URL:-/api}
+      VITE_PROXY_TARGET: http://backend:8000
     ports: ["${FRONTEND_PORT:-5173}:5173"]
     volumes: ["./frontend:/app", "/app/node_modules"]
-    depends_on: [backend]
+    depends_on:
+      backend: {condition: service_healthy}
 volumes:
   postgres_data:
   task_media:

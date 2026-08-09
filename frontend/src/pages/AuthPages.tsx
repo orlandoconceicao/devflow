@@ -1,7 +1,177 @@
-import{zodResolver}from'@hookform/resolvers/zod';import{useState}from'react';import{useForm}from'react-hook-form';import{Link,Navigate,useNavigate}from'react-router-dom';import{z}from'zod';import{Button,Input}from'../components/ui';import{useAuth}from'../features/auth/AuthContext';
-const loginSchema=z.object({email:z.email('Email inválido'),password:z.string().min(1,'Informe a senha')});type Login=z.infer<typeof loginSchema>;
-const registerSchema=z.object({first_name:z.string().min(2,'Informe seu nome'),last_name:z.string().min(2,'Informe seu sobrenome'),email:z.email('Email inválido'),password:z.string().min(8,'Use pelo menos 8 caracteres'),password_confirm:z.string()}).refine(v=>v.password===v.password_confirm,{message:'As senhas não coincidem',path:['password_confirm']});type Register=z.infer<typeof registerSchema>;
-function AuthShell({title,subtitle,children}:{title:string;subtitle:string;children:React.ReactNode}){return <div className="auth-page"><div className="auth-brand"><div className="logo"><i>⌁</i>DevFlow</div><h1>Organize o trabalho.<br/>Entregue com clareza.</h1><p>Seu espaço para projetos, equipe e resultados — tudo em um só fluxo.</p></div><section className="auth-card"><h2>{title}</h2><p>{subtitle}</p>{children}</section></div>}
-export function LoginPage(){const{login,isAuthenticated}=useAuth();const[serverError,setServerError]=useState('');const{register,handleSubmit,formState:{errors,isSubmitting}}=useForm<Login>({resolver:zodResolver(loginSchema)});if(isAuthenticated)return <Navigate to="/dashboard"/>;return <AuthShell title="Bem-vindo de volta" subtitle="Entre para continuar no seu workspace."><form onSubmit={handleSubmit(async v=>{try{await login(v.email,v.password)}catch{setServerError('Email ou senha inválidos.')}})}><label>Email<Input type="email" {...register('email')}/><small>{errors.email?.message}</small></label><label>Senha<Input type="password" {...register('password')}/><small>{errors.password?.message}</small></label>{serverError&&<div className="form-error">{serverError}</div>}<Button disabled={isSubmitting}>{isSubmitting?'Entrando…':'Entrar'}</Button></form><footer>Não tem uma conta? <Link to="/register">Criar conta</Link></footer></AuthShell>}
-export function RegisterPage(){const{register:signUp}=useAuth();const nav=useNavigate();const[serverError,setServerError]=useState('');const{register,handleSubmit,formState:{errors,isSubmitting}}=useForm<Register>({resolver:zodResolver(registerSchema)});return <AuthShell title="Crie sua conta" subtitle="Comece gratuitamente. Leva menos de um minuto."><form onSubmit={handleSubmit(async v=>{try{await signUp(v);nav('/onboarding/workspace')}catch{setServerError('Não foi possível criar a conta. Verifique os dados.')}})}><div className="form-row"><label>Nome<Input {...register('first_name')}/><small>{errors.first_name?.message}</small></label><label>Sobrenome<Input {...register('last_name')}/><small>{errors.last_name?.message}</small></label></div><label>Email<Input type="email" {...register('email')}/><small>{errors.email?.message}</small></label><label>Senha<Input type="password" {...register('password')}/><small>{errors.password?.message}</small></label><label>Confirmar senha<Input type="password" {...register('password_confirm')}/><small>{errors.password_confirm?.message}</small></label>{serverError&&<div className="form-error">{serverError}</div>}<Button disabled={isSubmitting}>Criar conta</Button></form><footer>Já tem uma conta? <Link to="/login">Entrar</Link></footer></AuthShell>}
-
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { z } from 'zod';
+import { Button, Input } from '../components/ui';
+import { useAuth } from '../features/auth/AuthContext';
+import { getApiErrorDetails } from '../services/api';
+const loginSchema = z.object({
+  email: z.email('Email inválido'),
+  password: z.string().min(1, 'Informe a senha'),
+});
+type Login = z.infer<typeof loginSchema>;
+const registerSchema = z
+  .object({
+    first_name: z.string().min(2, 'Informe seu nome'),
+    last_name: z.string().min(2, 'Informe seu sobrenome'),
+    email: z.email('Email inválido'),
+    password: z
+      .string()
+      .min(8, 'Use pelo menos 8 caracteres')
+      .regex(/[A-Za-zÀ-ÿ]/, 'A senha não pode ser apenas numérica'),
+    password_confirm: z.string(),
+  })
+  .refine((v) => v.password === v.password_confirm, {
+    message: 'As senhas não coincidem',
+    path: ['password_confirm'],
+  });
+type Register = z.infer<typeof registerSchema>;
+function AuthShell({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="auth-page">
+      <div className="auth-brand">
+        <div className="logo">
+          <i>⌁</i>DevFlow
+        </div>
+        <h1>
+          Organize o trabalho.
+          <br />
+          Entregue com clareza.
+        </h1>
+        <p>Seu espaço para projetos, equipe e resultados — tudo em um só fluxo.</p>
+      </div>
+      <section className="auth-card">
+        <h2>{title}</h2>
+        <p>{subtitle}</p>
+        {children}
+      </section>
+    </div>
+  );
+}
+export function LoginPage() {
+  const { login, isAuthenticated } = useAuth();
+  const [serverError, setServerError] = useState('');
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<Login>({ resolver: zodResolver(loginSchema) });
+  if (isAuthenticated) return <Navigate to="/dashboard" />;
+  return (
+    <AuthShell title="Bem-vindo de volta" subtitle="Entre para continuar no seu workspace.">
+      <form
+        onSubmit={handleSubmit(async (v) => {
+          setServerError('');
+          try {
+            await login(v.email, v.password);
+          } catch (error) {
+            setServerError(getApiErrorDetails(error, 'Não foi possível entrar.').message);
+          }
+        })}
+      >
+        <label>
+          Email
+          <Input type="email" {...register('email')} />
+          <small>{errors.email?.message}</small>
+        </label>
+        <label>
+          Senha
+          <Input type="password" {...register('password')} />
+          <small>{errors.password?.message}</small>
+        </label>
+        {serverError && <div className="form-error">{serverError}</div>}
+        <Button disabled={isSubmitting}>{isSubmitting ? 'Entrando…' : 'Entrar'}</Button>
+      </form>
+      <footer>
+        Não tem uma conta? <Link to="/register">Criar conta</Link>
+      </footer>
+    </AuthShell>
+  );
+}
+export function RegisterPage() {
+  const { register: signUp } = useAuth();
+  const nav = useNavigate();
+  const [serverError, setServerError] = useState('');
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<Register>({ resolver: zodResolver(registerSchema) });
+  return (
+    <AuthShell title="Crie sua conta" subtitle="Comece gratuitamente. Leva menos de um minuto.">
+      <form
+        onSubmit={handleSubmit(async (v) => {
+          setServerError('');
+          try {
+            await signUp(v);
+            nav('/onboarding/workspace');
+          } catch (error) {
+            const apiError = getApiErrorDetails(
+              error,
+              'Não foi possível criar a conta. Verifique os dados.',
+            );
+            const registerFields = [
+              'first_name',
+              'last_name',
+              'email',
+              'password',
+              'password_confirm',
+            ] as const;
+            registerFields.forEach((field) => {
+              if (apiError.fields[field]) {
+                setError(field, { type: 'server', message: apiError.fields[field] });
+              }
+            });
+            setServerError(apiError.message);
+          }
+        })}
+      >
+        <div className="form-row">
+          <label>
+            Nome
+            <Input {...register('first_name')} />
+            <small>{errors.first_name?.message}</small>
+          </label>
+          <label>
+            Sobrenome
+            <Input {...register('last_name')} />
+            <small>{errors.last_name?.message}</small>
+          </label>
+        </div>
+        <label>
+          Email
+          <Input type="email" {...register('email')} />
+          <small>{errors.email?.message}</small>
+        </label>
+        <label>
+          Senha
+          <Input type="password" {...register('password')} />
+          <small>{errors.password?.message}</small>
+          {!errors.password && (
+            <small>Use 8 ou mais caracteres e evite senhas comuns ou apenas números.</small>
+          )}
+        </label>
+        <label>
+          Confirmar senha
+          <Input type="password" {...register('password_confirm')} />
+          <small>{errors.password_confirm?.message}</small>
+        </label>
+        {serverError && <div className="form-error">{serverError}</div>}
+        <Button disabled={isSubmitting}>Criar conta</Button>
+      </form>
+      <footer>
+        Já tem uma conta? <Link to="/login">Entrar</Link>
+      </footer>
+    </AuthShell>
+  );
+}

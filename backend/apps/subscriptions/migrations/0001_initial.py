@@ -9,36 +9,84 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('organizations', '0001_initial'),
+        ("organizations", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Plan',
+            name="Plan",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=80)),
-                ('slug', models.SlugField(unique=True)),
-                ('price', models.DecimalField(decimal_places=2, max_digits=9)),
-                ('billing_interval', models.CharField(choices=[('MONTHLY', 'Mensal')], default='MONTHLY', max_length=12)),
-                ('is_active', models.BooleanField(default=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=80)),
+                ("slug", models.SlugField(unique=True)),
+                ("price", models.DecimalField(decimal_places=2, max_digits=9)),
+                (
+                    "billing_interval",
+                    models.CharField(
+                        choices=[("MONTHLY", "Mensal")],
+                        default="MONTHLY",
+                        max_length=12,
+                    ),
+                ),
+                ("is_active", models.BooleanField(default=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
         ),
         migrations.CreateModel(
-            name='Subscription',
+            name="Subscription",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('status', models.CharField(choices=[('INACTIVE', 'Inactive'), ('ACTIVE', 'Active'), ('PAST_DUE', 'Past Due'), ('CANCELED', 'Canceled')], default='ACTIVE', max_length=12)),
-                ('started_at', models.DateTimeField(auto_now_add=True)),
-                ('current_period_start', models.DateTimeField(blank=True, null=True)),
-                ('current_period_end', models.DateTimeField(blank=True, null=True)),
-                ('cancel_at_period_end', models.BooleanField(default=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('organization', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='subscription', to='organizations.organization')),
-                ('plan', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='subscriptions.plan')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("INACTIVE", "Inactive"),
+                            ("ACTIVE", "Active"),
+                            ("PAST_DUE", "Past Due"),
+                            ("CANCELED", "Canceled"),
+                        ],
+                        default="ACTIVE",
+                        max_length=12,
+                    ),
+                ),
+                ("started_at", models.DateTimeField(auto_now_add=True)),
+                ("current_period_start", models.DateTimeField(blank=True, null=True)),
+                ("current_period_end", models.DateTimeField(blank=True, null=True)),
+                ("cancel_at_period_end", models.BooleanField(default=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "organization",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="subscription",
+                        to="organizations.organization",
+                    ),
+                ),
+                (
+                    "plan",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        to="subscriptions.plan",
+                    ),
+                ),
             ],
         ),
     ]

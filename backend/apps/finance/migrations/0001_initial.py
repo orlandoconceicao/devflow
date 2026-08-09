@@ -10,123 +10,363 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('organizations', '0001_initial'),
-        ('work', '0002_task_taskattachment_taskcomment_tasklabel_and_more'),
+        ("organizations", "0001_initial"),
+        ("work", "0002_task_taskattachment_taskcomment_tasklabel_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Expense',
+            name="Expense",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('description', models.CharField(max_length=200)),
-                ('amount', models.DecimalField(decimal_places=2, max_digits=12)),
-                ('category', models.CharField(choices=[('SOFTWARE', 'Software'), ('PEOPLE', 'Pessoas'), ('TAX', 'Impostos'), ('MARKETING', 'Marketing'), ('OTHER', 'Outros')], default='OTHER', max_length=20)),
-                ('occurred_on', models.DateField()),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('created_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to=settings.AUTH_USER_MODEL)),
-                ('organization', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='expenses', to='organizations.organization')),
-                ('project', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='expenses', to='work.project')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("description", models.CharField(max_length=200)),
+                ("amount", models.DecimalField(decimal_places=2, max_digits=12)),
+                (
+                    "category",
+                    models.CharField(
+                        choices=[
+                            ("SOFTWARE", "Software"),
+                            ("PEOPLE", "Pessoas"),
+                            ("TAX", "Impostos"),
+                            ("MARKETING", "Marketing"),
+                            ("OTHER", "Outros"),
+                        ],
+                        default="OTHER",
+                        max_length=20,
+                    ),
+                ),
+                ("occurred_on", models.DateField()),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "organization",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="expenses",
+                        to="organizations.organization",
+                    ),
+                ),
+                (
+                    "project",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="expenses",
+                        to="work.project",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Invoice',
+            name="Invoice",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('number', models.CharField(max_length=30)),
-                ('status', models.CharField(choices=[('DRAFT', 'Rascunho'), ('SENT', 'Enviada'), ('PAID', 'Paga'), ('CANCELLED', 'Cancelada')], default='DRAFT', max_length=12)),
-                ('issued_on', models.DateField()),
-                ('due_on', models.DateField()),
-                ('notes', models.TextField(blank=True)),
-                ('subtotal', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
-                ('total', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
-                ('paid_at', models.DateTimeField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('client', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='invoices', to='work.client')),
-                ('created_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to=settings.AUTH_USER_MODEL)),
-                ('organization', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='invoices', to='organizations.organization')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("number", models.CharField(max_length=30)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("DRAFT", "Rascunho"),
+                            ("SENT", "Enviada"),
+                            ("PAID", "Paga"),
+                            ("CANCELLED", "Cancelada"),
+                        ],
+                        default="DRAFT",
+                        max_length=12,
+                    ),
+                ),
+                ("issued_on", models.DateField()),
+                ("due_on", models.DateField()),
+                ("notes", models.TextField(blank=True)),
+                (
+                    "subtotal",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=12),
+                ),
+                (
+                    "total",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=12),
+                ),
+                ("paid_at", models.DateTimeField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "client",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="invoices",
+                        to="work.client",
+                    ),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "organization",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="invoices",
+                        to="organizations.organization",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-issued_on', '-id'],
+                "ordering": ["-issued_on", "-id"],
             },
         ),
         migrations.CreateModel(
-            name='MemberRate',
+            name="MemberRate",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('hourly_cost', models.DecimalField(decimal_places=2, default=0, max_digits=10)),
-                ('hourly_rate', models.DecimalField(decimal_places=2, default=0, max_digits=10)),
-                ('organization', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='member_rates', to='organizations.organization')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='work_rates', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "hourly_cost",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=10),
+                ),
+                (
+                    "hourly_rate",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=10),
+                ),
+                (
+                    "organization",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="member_rates",
+                        to="organizations.organization",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="work_rates",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Revenue',
+            name="Revenue",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('description', models.CharField(max_length=200)),
-                ('amount', models.DecimalField(decimal_places=2, max_digits=12)),
-                ('occurred_on', models.DateField()),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('client', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='revenues', to='work.client')),
-                ('created_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to=settings.AUTH_USER_MODEL)),
-                ('organization', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='revenues', to='organizations.organization')),
-                ('project', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='revenues', to='work.project')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("description", models.CharField(max_length=200)),
+                ("amount", models.DecimalField(decimal_places=2, max_digits=12)),
+                ("occurred_on", models.DateField()),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "client",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="revenues",
+                        to="work.client",
+                    ),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "organization",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="revenues",
+                        to="organizations.organization",
+                    ),
+                ),
+                (
+                    "project",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="revenues",
+                        to="work.project",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='TimeEntry',
+            name="TimeEntry",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('description', models.CharField(blank=True, max_length=240)),
-                ('started_at', models.DateTimeField()),
-                ('ended_at', models.DateTimeField(blank=True, null=True)),
-                ('duration_seconds', models.PositiveIntegerField(default=0)),
-                ('hourly_rate', models.DecimalField(decimal_places=2, default=0, max_digits=10)),
-                ('hourly_cost', models.DecimalField(decimal_places=2, default=0, max_digits=10)),
-                ('billable', models.BooleanField(default=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('organization', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='time_entries', to='organizations.organization')),
-                ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='time_entries', to='work.project')),
-                ('task', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='time_entries', to='work.task')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='time_entries', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("description", models.CharField(blank=True, max_length=240)),
+                ("started_at", models.DateTimeField()),
+                ("ended_at", models.DateTimeField(blank=True, null=True)),
+                ("duration_seconds", models.PositiveIntegerField(default=0)),
+                (
+                    "hourly_rate",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=10),
+                ),
+                (
+                    "hourly_cost",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=10),
+                ),
+                ("billable", models.BooleanField(default=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "organization",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="time_entries",
+                        to="organizations.organization",
+                    ),
+                ),
+                (
+                    "project",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="time_entries",
+                        to="work.project",
+                    ),
+                ),
+                (
+                    "task",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="time_entries",
+                        to="work.task",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="time_entries",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-started_at'],
+                "ordering": ["-started_at"],
             },
         ),
         migrations.CreateModel(
-            name='InvoiceItem',
+            name="InvoiceItem",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('description', models.CharField(max_length=240)),
-                ('quantity', models.DecimalField(decimal_places=2, default=1, max_digits=10)),
-                ('unit_price', models.DecimalField(decimal_places=2, max_digits=12)),
-                ('total', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
-                ('invoice', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='items', to='finance.invoice')),
-                ('time_entries', models.ManyToManyField(blank=True, related_name='invoice_items', to='finance.timeentry')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("description", models.CharField(max_length=240)),
+                (
+                    "quantity",
+                    models.DecimalField(decimal_places=2, default=1, max_digits=10),
+                ),
+                ("unit_price", models.DecimalField(decimal_places=2, max_digits=12)),
+                (
+                    "total",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=12),
+                ),
+                (
+                    "invoice",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="items",
+                        to="finance.invoice",
+                    ),
+                ),
+                (
+                    "time_entries",
+                    models.ManyToManyField(
+                        blank=True, related_name="invoice_items", to="finance.timeentry"
+                    ),
+                ),
             ],
         ),
         migrations.AddConstraint(
-            model_name='invoice',
-            constraint=models.UniqueConstraint(fields=('organization', 'number'), name='unique_invoice_number'),
+            model_name="invoice",
+            constraint=models.UniqueConstraint(
+                fields=("organization", "number"), name="unique_invoice_number"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='memberrate',
-            constraint=models.UniqueConstraint(fields=('organization', 'user'), name='unique_member_rate'),
+            model_name="memberrate",
+            constraint=models.UniqueConstraint(
+                fields=("organization", "user"), name="unique_member_rate"
+            ),
         ),
         migrations.AddIndex(
-            model_name='timeentry',
-            index=models.Index(fields=['organization', 'started_at'], name='finance_tim_organiz_d02607_idx'),
+            model_name="timeentry",
+            index=models.Index(
+                fields=["organization", "started_at"],
+                name="finance_tim_organiz_d02607_idx",
+            ),
         ),
         migrations.AddIndex(
-            model_name='timeentry',
-            index=models.Index(fields=['organization', 'project'], name='finance_tim_organiz_53e206_idx'),
+            model_name="timeentry",
+            index=models.Index(
+                fields=["organization", "project"],
+                name="finance_tim_organiz_53e206_idx",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='timeentry',
-            constraint=models.UniqueConstraint(condition=models.Q(('ended_at__isnull', True)), fields=('organization', 'user'), name='one_active_timer_per_org_user'),
+            model_name="timeentry",
+            constraint=models.UniqueConstraint(
+                condition=models.Q(("ended_at__isnull", True)),
+                fields=("organization", "user"),
+                name="one_active_timer_per_org_user",
+            ),
         ),
     ]

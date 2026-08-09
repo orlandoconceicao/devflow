@@ -7,57 +7,100 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('organizations', '0001_initial'),
-        ('subscriptions', '0001_initial'),
+        ("organizations", "0001_initial"),
+        ("subscriptions", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='subscription',
-            name='canceled_at',
+            model_name="subscription",
+            name="canceled_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='subscription',
-            name='provider',
+            model_name="subscription",
+            name="provider",
             field=models.CharField(blank=True, max_length=20),
         ),
         migrations.AddField(
-            model_name='subscription',
-            name='provider_customer_id',
+            model_name="subscription",
+            name="provider_customer_id",
             field=models.CharField(blank=True, max_length=100),
         ),
         migrations.AddField(
-            model_name='subscription',
-            name='provider_subscription_id',
+            model_name="subscription",
+            name="provider_subscription_id",
             field=models.CharField(blank=True, max_length=100),
         ),
         migrations.CreateModel(
-            name='PaymentEvent',
+            name="PaymentEvent",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('provider', models.CharField(max_length=20)),
-                ('provider_event_id', models.CharField(max_length=120, unique=True)),
-                ('event_type', models.CharField(max_length=80)),
-                ('processed', models.BooleanField(default=False)),
-                ('payload_hash', models.CharField(max_length=64)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('processed_at', models.DateTimeField(blank=True, null=True)),
-                ('organization', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='organizations.organization')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("provider", models.CharField(max_length=20)),
+                ("provider_event_id", models.CharField(max_length=120, unique=True)),
+                ("event_type", models.CharField(max_length=80)),
+                ("processed", models.BooleanField(default=False)),
+                ("payload_hash", models.CharField(max_length=64)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("processed_at", models.DateTimeField(blank=True, null=True)),
+                (
+                    "organization",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="organizations.organization",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='SubscriptionPayment',
+            name="SubscriptionPayment",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('provider_payment_id', models.CharField(max_length=120, unique=True)),
-                ('amount', models.DecimalField(decimal_places=2, max_digits=9)),
-                ('currency', models.CharField(default='BRL', max_length=3)),
-                ('status', models.CharField(choices=[('PENDING', 'Pending'), ('PAID', 'Paid'), ('FAILED', 'Failed'), ('REFUNDED', 'Refunded'), ('CANCELED', 'Canceled')], max_length=10)),
-                ('paid_at', models.DateTimeField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('subscription', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='payments', to='subscriptions.subscription')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("provider_payment_id", models.CharField(max_length=120, unique=True)),
+                ("amount", models.DecimalField(decimal_places=2, max_digits=9)),
+                ("currency", models.CharField(default="BRL", max_length=3)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("PENDING", "Pending"),
+                            ("PAID", "Paid"),
+                            ("FAILED", "Failed"),
+                            ("REFUNDED", "Refunded"),
+                            ("CANCELED", "Canceled"),
+                        ],
+                        max_length=10,
+                    ),
+                ),
+                ("paid_at", models.DateTimeField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "subscription",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="payments",
+                        to="subscriptions.subscription",
+                    ),
+                ),
             ],
         ),
     ]

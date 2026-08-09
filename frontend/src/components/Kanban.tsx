@@ -1,4 +1,316 @@
-import{zodResolver}from'@hookform/resolvers/zod';import{Plus,X}from'lucide-react';import{useState}from'react';import{useForm}from'react-hook-form';import{z}from'zod';import{useCreateTask,useMoveTask,useProjectTasks,useTask,useTaskActivities,useTaskAttachments,useTaskComments,useTaskLabels,useUpdateTask,useCreateComment,useUploadAttachment}from'../features/tasks/hooks';import type{ProjectMember,TaskStatus}from'../types';import{Button,EmptyState,Input,LoadingState,Select}from'./ui';import{TaskCard}from'./TaskCard';import{formatDate}from'../utils/format';import{taskService}from'../services/tasks';
-const columns:[TaskStatus,string][]=[['BACKLOG','Backlog'],['TODO','A fazer'],['IN_PROGRESS','Em andamento'],['REVIEW','Revisão'],['DONE','Concluído']];const schema=z.object({title:z.string().min(2,'Informe o título'),description:z.string().optional(),priority:z.enum(['LOW','MEDIUM','HIGH','URGENT']),due_date:z.string().optional()});type Form=z.infer<typeof schema>;
-export function Kanban({project,members}:{project:number;members:ProjectMember[]}){const tasks=useProjectTasks(project);const move=useMoveTask(project);const[createStatus,setCreateStatus]=useState<TaskStatus|null>(null);const[selected,setSelected]=useState<number|null>(null);const create=useCreateTask(project);const{register,handleSubmit,reset,formState:{errors}}=useForm<Form>({resolver:zodResolver(schema),defaultValues:{title:'',description:'',priority:'MEDIUM',due_date:''}});if(tasks.isLoading)return <LoadingState/>;const list=tasks.data??[];const moveTo=(id:number,status:TaskStatus,position:number)=>move.mutate({id,status,position});return <><div className="kanban">{columns.map(([status,label])=>{const items=list.filter(t=>t.status===status).sort((a,b)=>a.position-b.position);return <section className="kanban-column" key={status} onDragOver={e=>e.preventDefault()} onDrop={e=>moveTo(Number(e.dataTransfer.getData('task-id')),status,items.length)}><header><b>{label}</b><span>{items.length}</span></header>{items.map((task,index)=><div key={task.id} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.stopPropagation();moveTo(Number(e.dataTransfer.getData('task-id')),status,index)}}><TaskCard task={task} onOpen={()=>setSelected(task.id)}/></div>)}{!items.length&&<EmptyState title="Nenhuma tarefa" description="Esta coluna está vazia."/>}<button className="add-task" onClick={()=>setCreateStatus(status)}><Plus size={15}/> Nova tarefa</button></section>})}</div>{createStatus&&<div className="modal-backdrop"><div className="form-modal"><div><h2>Nova tarefa</h2><button onClick={()=>setCreateStatus(null)}>×</button></div><form onSubmit={handleSubmit(async v=>{await create.mutateAsync({...v,status:createStatus,due_date:v.due_date||null});reset();setCreateStatus(null)})}><label>Título<Input {...register('title')}/><small>{errors.title?.message}</small></label><label>Descrição<textarea {...register('description')}/></label><div className="form-row"><label>Prioridade<Select {...register('priority')}><option value="LOW">Baixa</option><option value="MEDIUM">Média</option><option value="HIGH">Alta</option><option value="URGENT">Urgente</option></Select></label><label>Prazo<Input type="date" {...register('due_date')}/></label></div><footer><Button type="button" className="secondary" onClick={()=>setCreateStatus(null)}>Cancelar</Button><Button>Criar tarefa</Button></footer></form></div></div>}{selected&&<TaskDetails taskId={selected} project={project} members={members} onClose={()=>setSelected(null)}/>}</>}
-export function TaskDetails({taskId,project,onClose}:{taskId:number;project:number;members:ProjectMember[];onClose:()=>void}){const task=useTask(taskId);const comments=useTaskComments(taskId);const attachments=useTaskAttachments(taskId);const activities=useTaskActivities(taskId);const labels=useTaskLabels();const update=useUpdateTask(taskId,project);const comment=useCreateComment(taskId);const upload=useUploadAttachment(taskId);const[text,setText]=useState('');if(!task.data)return <div className="modal-backdrop"><div className="task-drawer"><LoadingState/></div></div>;const t=task.data;return <div className="modal-backdrop task-overlay"><aside className="task-drawer"><header><span>{t.project_name}</span><button onClick={onClose}><X/></button></header><Input value={t.title} onChange={e=>update.mutate({title:e.target.value})}/><textarea value={t.description} placeholder="Adicione uma descrição…" onChange={e=>update.mutate({description:e.target.value})}/><div className="task-fields"><label>Status<Select value={t.status} onChange={e=>update.mutate({status:e.target.value as TaskStatus})}>{columns.map(([v,l])=><option key={v} value={v}>{l}</option>)}</Select></label><label>Prioridade<Select value={t.priority} onChange={e=>update.mutate({priority:e.target.value as typeof t.priority})}><option value="LOW">Baixa</option><option value="MEDIUM">Média</option><option value="HIGH">Alta</option><option value="URGENT">Urgente</option></Select></label><label>Prazo<Input type="date" value={t.due_date??''} onChange={e=>update.mutate({due_date:e.target.value||null})}/></label></div><div className="task-labels">{t.labels.map(l=><span key={l.id} style={{borderColor:l.color}}>{l.name}</span>)}{!labels.data?.length&&<small>Nenhuma label criada.</small>}</div><section><h3>Comentários</h3>{comments.data?.map(c=><div className="comment" key={c.id}><b>{c.author.first_name||c.author.email}</b><time>{new Date(c.created_at).toLocaleString('pt-BR')}</time><p>{c.content}</p></div>)}{!comments.data?.length&&<p className="muted">Nenhum comentário ainda.</p>}<form className="comment-form" onSubmit={async e=>{e.preventDefault();if(text.trim()){await comment.mutateAsync(text);setText('')}}}><Input value={text} onChange={e=>setText(e.target.value)} placeholder="Escreva um comentário…"/><Button>Enviar</Button></form></section><section><h3>Arquivos</h3><input type="file" onChange={e=>{const f=e.target.files?.[0];if(f)upload.mutate(f)}}/>{attachments.data?.map(a=><a className="attachment" key={a.id} href="#" onClick={e=>{e.preventDefault();void taskService.download(a)}}><span>{a.original_name}</span><small>{Math.ceil(a.file_size/1024)} KB</small></a>)}{!attachments.data?.length&&<p className="muted">Nenhum arquivo anexado.</p>}</section><section><h3>Atividade</h3>{activities.data?.map(a=><div className="activity-row" key={a.id}><span>{a.user?.first_name||'Sistema'} · {a.action.replaceAll('_',' ').toLowerCase()}</span><time>{new Date(a.created_at).toLocaleString('pt-BR')}</time></div>)}</section><footer className="task-meta">Criada em {formatDate(t.created_at.slice(0,10))}</footer></aside></div>}
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Plus, X } from 'lucide-react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import {
+  useCreateTask,
+  useMoveTask,
+  useProjectTasks,
+  useTask,
+  useTaskActivities,
+  useTaskAttachments,
+  useTaskComments,
+  useTaskLabels,
+  useUpdateTask,
+  useCreateComment,
+  useUploadAttachment,
+} from '../features/tasks/hooks';
+import type { ProjectMember, TaskStatus } from '../types';
+import { Button, EmptyState, Input, LoadingState, Select } from './ui';
+import { TaskCard } from './TaskCard';
+import { formatDate } from '../utils/format';
+import { taskService } from '../services/tasks';
+const columns: [TaskStatus, string][] = [
+  ['BACKLOG', 'Backlog'],
+  ['TODO', 'A fazer'],
+  ['IN_PROGRESS', 'Em andamento'],
+  ['REVIEW', 'Revisão'],
+  ['DONE', 'Concluído'],
+];
+const schema = z.object({
+  title: z.string().min(2, 'Informe o título'),
+  description: z.string().optional(),
+  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
+  due_date: z.string().optional(),
+});
+type Form = z.infer<typeof schema>;
+export function Kanban({ project, members }: { project: number; members: ProjectMember[] }) {
+  const tasks = useProjectTasks(project);
+  const move = useMoveTask(project);
+  const [createStatus, setCreateStatus] = useState<TaskStatus | null>(null);
+  const [selected, setSelected] = useState<number | null>(null);
+  const create = useCreateTask(project);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<Form>({
+    resolver: zodResolver(schema),
+    defaultValues: { title: '', description: '', priority: 'MEDIUM', due_date: '' },
+  });
+  if (tasks.isLoading) return <LoadingState />;
+  const list = tasks.data ?? [];
+  const moveTo = (id: number, status: TaskStatus, position: number) =>
+    move.mutate({ id, status, position });
+  return (
+    <>
+      <div className="kanban">
+        {columns.map(([status, label]) => {
+          const items = list
+            .filter((t) => t.status === status)
+            .sort((a, b) => a.position - b.position);
+          return (
+            <section
+              className="kanban-column"
+              key={status}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) =>
+                moveTo(Number(e.dataTransfer.getData('task-id')), status, items.length)
+              }
+            >
+              <header>
+                <b>{label}</b>
+                <span>{items.length}</span>
+              </header>
+              {items.map((task, index) => (
+                <div
+                  key={task.id}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.stopPropagation();
+                    moveTo(Number(e.dataTransfer.getData('task-id')), status, index);
+                  }}
+                >
+                  <TaskCard task={task} onOpen={() => setSelected(task.id)} />
+                </div>
+              ))}
+              {!items.length && (
+                <EmptyState title="Nenhuma tarefa" description="Esta coluna está vazia." />
+              )}
+              <button className="add-task" onClick={() => setCreateStatus(status)}>
+                <Plus size={15} /> Nova tarefa
+              </button>
+            </section>
+          );
+        })}
+      </div>
+      {createStatus && (
+        <div className="modal-backdrop">
+          <div className="form-modal">
+            <div>
+              <h2>Nova tarefa</h2>
+              <button onClick={() => setCreateStatus(null)}>×</button>
+            </div>
+            <form
+              onSubmit={handleSubmit(async (v) => {
+                await create.mutateAsync({
+                  ...v,
+                  status: createStatus,
+                  due_date: v.due_date || null,
+                });
+                reset();
+                setCreateStatus(null);
+              })}
+            >
+              <label>
+                Título
+                <Input {...register('title')} />
+                <small>{errors.title?.message}</small>
+              </label>
+              <label>
+                Descrição
+                <textarea {...register('description')} />
+              </label>
+              <div className="form-row">
+                <label>
+                  Prioridade
+                  <Select {...register('priority')}>
+                    <option value="LOW">Baixa</option>
+                    <option value="MEDIUM">Média</option>
+                    <option value="HIGH">Alta</option>
+                    <option value="URGENT">Urgente</option>
+                  </Select>
+                </label>
+                <label>
+                  Prazo
+                  <Input type="date" {...register('due_date')} />
+                </label>
+              </div>
+              <footer>
+                <Button type="button" className="secondary" onClick={() => setCreateStatus(null)}>
+                  Cancelar
+                </Button>
+                <Button>Criar tarefa</Button>
+              </footer>
+            </form>
+          </div>
+        </div>
+      )}
+      {selected && (
+        <TaskDetails
+          taskId={selected}
+          project={project}
+          members={members}
+          onClose={() => setSelected(null)}
+        />
+      )}
+    </>
+  );
+}
+export function TaskDetails({
+  taskId,
+  project,
+  onClose,
+}: {
+  taskId: number;
+  project: number;
+  members: ProjectMember[];
+  onClose: () => void;
+}) {
+  const task = useTask(taskId);
+  const comments = useTaskComments(taskId);
+  const attachments = useTaskAttachments(taskId);
+  const activities = useTaskActivities(taskId);
+  const labels = useTaskLabels();
+  const update = useUpdateTask(taskId, project);
+  const comment = useCreateComment(taskId);
+  const upload = useUploadAttachment(taskId);
+  const [text, setText] = useState('');
+  if (!task.data)
+    return (
+      <div className="modal-backdrop">
+        <div className="task-drawer">
+          <LoadingState />
+        </div>
+      </div>
+    );
+  const t = task.data;
+  return (
+    <div className="modal-backdrop task-overlay">
+      <aside className="task-drawer">
+        <header>
+          <span>{t.project_name}</span>
+          <button onClick={onClose}>
+            <X />
+          </button>
+        </header>
+        <Input value={t.title} onChange={(e) => update.mutate({ title: e.target.value })} />
+        <textarea
+          value={t.description}
+          placeholder="Adicione uma descrição…"
+          onChange={(e) => update.mutate({ description: e.target.value })}
+        />
+        <div className="task-fields">
+          <label>
+            Status
+            <Select
+              value={t.status}
+              onChange={(e) => update.mutate({ status: e.target.value as TaskStatus })}
+            >
+              {columns.map(([v, l]) => (
+                <option key={v} value={v}>
+                  {l}
+                </option>
+              ))}
+            </Select>
+          </label>
+          <label>
+            Prioridade
+            <Select
+              value={t.priority}
+              onChange={(e) => update.mutate({ priority: e.target.value as typeof t.priority })}
+            >
+              <option value="LOW">Baixa</option>
+              <option value="MEDIUM">Média</option>
+              <option value="HIGH">Alta</option>
+              <option value="URGENT">Urgente</option>
+            </Select>
+          </label>
+          <label>
+            Prazo
+            <Input
+              type="date"
+              value={t.due_date ?? ''}
+              onChange={(e) => update.mutate({ due_date: e.target.value || null })}
+            />
+          </label>
+        </div>
+        <div className="task-labels">
+          {t.labels.map((l) => (
+            <span key={l.id} style={{ borderColor: l.color }}>
+              {l.name}
+            </span>
+          ))}
+          {!labels.data?.length && <small>Nenhuma label criada.</small>}
+        </div>
+        <section>
+          <h3>Comentários</h3>
+          {comments.data?.map((c) => (
+            <div className="comment" key={c.id}>
+              <b>{c.author.first_name || c.author.email}</b>
+              <time>{new Date(c.created_at).toLocaleString('pt-BR')}</time>
+              <p>{c.content}</p>
+            </div>
+          ))}
+          {!comments.data?.length && <p className="muted">Nenhum comentário ainda.</p>}
+          <form
+            className="comment-form"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (text.trim()) {
+                await comment.mutateAsync(text);
+                setText('');
+              }
+            }}
+          >
+            <Input
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Escreva um comentário…"
+            />
+            <Button>Enviar</Button>
+          </form>
+        </section>
+        <section>
+          <h3>Arquivos</h3>
+          <input
+            type="file"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) upload.mutate(f);
+            }}
+          />
+          {attachments.data?.map((a) => (
+            <a
+              className="attachment"
+              key={a.id}
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                void taskService.download(a);
+              }}
+            >
+              <span>{a.original_name}</span>
+              <small>{Math.ceil(a.file_size / 1024)} KB</small>
+            </a>
+          ))}
+          {!attachments.data?.length && <p className="muted">Nenhum arquivo anexado.</p>}
+        </section>
+        <section>
+          <h3>Atividade</h3>
+          {activities.data?.map((a) => (
+            <div className="activity-row" key={a.id}>
+              <span>
+                {a.user?.first_name || 'Sistema'} · {a.action.replaceAll('_', ' ').toLowerCase()}
+              </span>
+              <time>{new Date(a.created_at).toLocaleString('pt-BR')}</time>
+            </div>
+          ))}
+        </section>
+        <footer className="task-meta">Criada em {formatDate(t.created_at.slice(0, 10))}</footer>
+      </aside>
+    </div>
+  );
+}

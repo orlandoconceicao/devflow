@@ -1,12 +1,77 @@
 from django.db import models
+
+
 class Plan(models.Model):
-    class Interval(models.TextChoices): MONTHLY="MONTHLY","Mensal"
-    name=models.CharField(max_length=80); slug=models.SlugField(unique=True); price=models.DecimalField(max_digits=9,decimal_places=2); billing_interval=models.CharField(max_length=12,choices=Interval.choices,default=Interval.MONTHLY); is_active=models.BooleanField(default=True); created_at=models.DateTimeField(auto_now_add=True); updated_at=models.DateTimeField(auto_now=True)
+    class Interval(models.TextChoices):
+        MONTHLY = "MONTHLY", "Mensal"
+
+    name = models.CharField(max_length=80)
+    slug = models.SlugField(unique=True)
+    price = models.DecimalField(max_digits=9, decimal_places=2)
+    billing_interval = models.CharField(
+        max_length=12, choices=Interval.choices, default=Interval.MONTHLY
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
 class Subscription(models.Model):
-    class Status(models.TextChoices): INACTIVE="INACTIVE"; ACTIVE="ACTIVE"; PAST_DUE="PAST_DUE"; CANCELED="CANCELED"
-    organization=models.OneToOneField("organizations.Organization",on_delete=models.CASCADE,related_name="subscription"); plan=models.ForeignKey(Plan,on_delete=models.PROTECT); status=models.CharField(max_length=12,choices=Status.choices,default=Status.ACTIVE); provider=models.CharField(max_length=20,blank=True); provider_customer_id=models.CharField(max_length=100,blank=True); provider_subscription_id=models.CharField(max_length=100,blank=True); started_at=models.DateTimeField(auto_now_add=True); current_period_start=models.DateTimeField(null=True,blank=True); current_period_end=models.DateTimeField(null=True,blank=True); cancel_at_period_end=models.BooleanField(default=False); canceled_at=models.DateTimeField(null=True,blank=True); created_at=models.DateTimeField(auto_now_add=True); updated_at=models.DateTimeField(auto_now=True)
+    class Status(models.TextChoices):
+        INACTIVE = "INACTIVE"
+        ACTIVE = "ACTIVE"
+        PAST_DUE = "PAST_DUE"
+        CANCELED = "CANCELED"
+
+    organization = models.OneToOneField(
+        "organizations.Organization",
+        on_delete=models.CASCADE,
+        related_name="subscription",
+    )
+    plan = models.ForeignKey(Plan, on_delete=models.PROTECT)
+    status = models.CharField(
+        max_length=12, choices=Status.choices, default=Status.ACTIVE
+    )
+    provider = models.CharField(max_length=20, blank=True)
+    provider_customer_id = models.CharField(max_length=100, blank=True)
+    provider_subscription_id = models.CharField(max_length=100, blank=True)
+    started_at = models.DateTimeField(auto_now_add=True)
+    current_period_start = models.DateTimeField(null=True, blank=True)
+    current_period_end = models.DateTimeField(null=True, blank=True)
+    cancel_at_period_end = models.BooleanField(default=False)
+    canceled_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
 class PaymentEvent(models.Model):
-    organization=models.ForeignKey("organizations.Organization",on_delete=models.SET_NULL,null=True,blank=True);provider=models.CharField(max_length=20);provider_event_id=models.CharField(max_length=120,unique=True);event_type=models.CharField(max_length=80);processed=models.BooleanField(default=False);payload_hash=models.CharField(max_length=64);created_at=models.DateTimeField(auto_now_add=True);processed_at=models.DateTimeField(null=True,blank=True)
+    organization = models.ForeignKey(
+        "organizations.Organization", on_delete=models.SET_NULL, null=True, blank=True
+    )
+    provider = models.CharField(max_length=20)
+    provider_event_id = models.CharField(max_length=120, unique=True)
+    event_type = models.CharField(max_length=80)
+    processed = models.BooleanField(default=False)
+    payload_hash = models.CharField(max_length=64)
+    created_at = models.DateTimeField(auto_now_add=True)
+    processed_at = models.DateTimeField(null=True, blank=True)
+
+
 class SubscriptionPayment(models.Model):
-    class Status(models.TextChoices):PENDING="PENDING";PAID="PAID";FAILED="FAILED";REFUNDED="REFUNDED";CANCELED="CANCELED"
-    subscription=models.ForeignKey(Subscription,on_delete=models.CASCADE,related_name="payments");provider_payment_id=models.CharField(max_length=120,unique=True);amount=models.DecimalField(max_digits=9,decimal_places=2);currency=models.CharField(max_length=3,default="BRL");status=models.CharField(max_length=10,choices=Status.choices);paid_at=models.DateTimeField(null=True,blank=True);created_at=models.DateTimeField(auto_now_add=True);updated_at=models.DateTimeField(auto_now=True)
+    class Status(models.TextChoices):
+        PENDING = "PENDING"
+        PAID = "PAID"
+        FAILED = "FAILED"
+        REFUNDED = "REFUNDED"
+        CANCELED = "CANCELED"
+
+    subscription = models.ForeignKey(
+        Subscription, on_delete=models.CASCADE, related_name="payments"
+    )
+    provider_payment_id = models.CharField(max_length=120, unique=True)
+    amount = models.DecimalField(max_digits=9, decimal_places=2)
+    currency = models.CharField(max_length=3, default="BRL")
+    status = models.CharField(max_length=10, choices=Status.choices)
+    paid_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)

@@ -1,5 +1,211 @@
-import{zodResolver}from'@hookform/resolvers/zod';import{useEffect,useState}from'react';import{useForm}from'react-hook-form';import{z}from'zod';import{Button,EmptyState,Input,LoadingState}from'../components/ui';import{useAuth}from'../features/auth/AuthContext';import{api}from'../services/api';import type{Subscription,SubscriptionPayment}from'../types';
-const schema=z.object({first_name:z.string().min(2),last_name:z.string().min(2),avatar:z.string().optional()});type Form=z.infer<typeof schema>;
-export function ProfilePage(){const{user,refreshUser}=useAuth();const[success,setSuccess]=useState(false);const{register,handleSubmit,reset,formState:{isSubmitting}}=useForm<Form>({resolver:zodResolver(schema)});useEffect(()=>{if(user)reset({first_name:user.first_name,last_name:user.last_name,avatar:user.avatar??''})},[user,reset]);return <><div className="page-head"><div><h1>Perfil</h1><p>Gerencie suas informações pessoais.</p></div></div><section className="settings-card"><form onSubmit={handleSubmit(async v=>{await api.patch('/auth/me/',v);await refreshUser();setSuccess(true)})}><div className="form-row"><label>Nome<Input {...register('first_name')}/></label><label>Sobrenome<Input {...register('last_name')}/></label></div><label>Email<Input value={user?.email??''} readOnly/></label><label>URL do avatar<Input {...register('avatar')}/></label>{success&&<div className="success">Perfil atualizado com sucesso.</div>}<Button disabled={isSubmitting}>Salvar alterações</Button></form></section></>}
-export function BillingPage(){const[data,setData]=useState<Subscription|null>(null),[payments,setPayments]=useState<SubscriptionPayment[]>([]),[loading,setLoading]=useState(true);const load=()=>Promise.all([api.get<Subscription>('/billing/subscription/'),api.get<SubscriptionPayment[]>('/billing/payments/')]).then(([s,p])=>{setData(s.data);setPayments(p.data)}).finally(()=>setLoading(false));useEffect(()=>{load()},[]);const checkout=async()=>{const{data}=await api.post<{url:string}>('/billing/checkout/');location.assign(data.url)};const post=async(path:string)=>{await api.post(path);await load()};if(loading)return <LoadingState/>;const pro=data?.plan.slug==='pro'&&data.status==='ACTIVE';return <><div className="page-head"><div><h1>Assinatura</h1><p>Gerencie seu plano e informações de cobrança.</p></div>{pro?<Button className="secondary" onClick={()=>post(data.cancel_at_period_end?'/billing/reactivate/':'/billing/cancel/')}>{data.cancel_at_period_end?'Reativar':'Cancelar no fim do período'}</Button>:<Button onClick={checkout}>Assinar Pro — R$ 25/mês</Button>}</div><section className="billing-current"><span>PLANO ATUAL</span><h2>{data?.plan.name??'Free'} <small>{data?.status}</small></h2><strong>R$ {Number(data?.plan.price??0).toLocaleString('pt-BR',{minimumFractionDigits:2})}<small>/mês</small></strong>{data?.current_period_end&&<p>Acesso até {new Date(data.current_period_end).toLocaleDateString('pt-BR')}{data.cancel_at_period_end?' — cancelamento agendado':''}</p>}</section><section className="panel"><h2>Histórico de pagamentos</h2>{payments.length?<div className="table-wrap flat"><table><thead><tr><th>Data</th><th>Referência</th><th>Status</th><th>Valor</th></tr></thead><tbody>{payments.map(p=><tr key={p.id}><td>{new Date(p.created_at).toLocaleDateString('pt-BR')}</td><td>{p.provider_payment_id}</td><td>{p.status}</td><td>R$ {Number(p.amount).toFixed(2)}</td></tr>)}</tbody></table></div>:<EmptyState title="Nenhum pagamento" description="Seu histórico aparecerá após a confirmação do gateway."/>}</section></>}
-export function NotificationSettings(){const[email,setEmail]=useState(true),[inside,setInside]=useState(true),[ready,setReady]=useState(false);useEffect(()=>{api.get('/notification-preferences/').then(r=>{setEmail(r.data.email_enabled);setInside(r.data.in_app_enabled);setReady(true)})},[]);if(!ready)return <LoadingState/>;return <><div className="page-head"><div><h1>Preferências de notificações</h1><p>Escolha como deseja receber atualizações.</p></div></div><section className="settings-card"><form onSubmit={async e=>{e.preventDefault();await api.patch('/notification-preferences/',{email_enabled:email,in_app_enabled:inside});alert('Preferências salvas.')}}><label><input type="checkbox" checked={inside} onChange={e=>setInside(e.target.checked)}/> Notificações dentro do DevFlow</label><label><input type="checkbox" checked={email} onChange={e=>setEmail(e.target.checked)}/> Notificações por email</label><Button>Salvar preferências</Button></form></section></>}
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { Button, EmptyState, Input, LoadingState } from '../components/ui';
+import { useAuth } from '../features/auth/AuthContext';
+import { api } from '../services/api';
+import type { Subscription, SubscriptionPayment } from '../types';
+const schema = z.object({
+  first_name: z.string().min(2),
+  last_name: z.string().min(2),
+  avatar: z.string().optional(),
+});
+type Form = z.infer<typeof schema>;
+export function ProfilePage() {
+  const { user, refreshUser } = useAuth();
+  const [success, setSuccess] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { isSubmitting },
+  } = useForm<Form>({ resolver: zodResolver(schema) });
+  useEffect(() => {
+    if (user)
+      reset({ first_name: user.first_name, last_name: user.last_name, avatar: user.avatar ?? '' });
+  }, [user, reset]);
+  return (
+    <>
+      <div className="page-head">
+        <div>
+          <h1>Perfil</h1>
+          <p>Gerencie suas informações pessoais.</p>
+        </div>
+      </div>
+      <section className="settings-card">
+        <form
+          onSubmit={handleSubmit(async (v) => {
+            await api.patch('/auth/me/', v);
+            await refreshUser();
+            setSuccess(true);
+          })}
+        >
+          <div className="form-row">
+            <label>
+              Nome
+              <Input {...register('first_name')} />
+            </label>
+            <label>
+              Sobrenome
+              <Input {...register('last_name')} />
+            </label>
+          </div>
+          <label>
+            Email
+            <Input value={user?.email ?? ''} readOnly />
+          </label>
+          <label>
+            URL do avatar
+            <Input {...register('avatar')} />
+          </label>
+          {success && <div className="success">Perfil atualizado com sucesso.</div>}
+          <Button disabled={isSubmitting}>Salvar alterações</Button>
+        </form>
+      </section>
+    </>
+  );
+}
+export function BillingPage() {
+  const [data, setData] = useState<Subscription | null>(null),
+    [payments, setPayments] = useState<SubscriptionPayment[]>([]),
+    [loading, setLoading] = useState(true);
+  const load = () =>
+    Promise.all([
+      api.get<Subscription>('/billing/subscription/'),
+      api.get<SubscriptionPayment[]>('/billing/payments/'),
+    ])
+      .then(([s, p]) => {
+        setData(s.data);
+        setPayments(p.data);
+      })
+      .finally(() => setLoading(false));
+  useEffect(() => {
+    load();
+  }, []);
+  const checkout = async () => {
+    const { data } = await api.post<{ url: string }>('/billing/checkout/');
+    location.assign(data.url);
+  };
+  const post = async (path: string) => {
+    await api.post(path);
+    await load();
+  };
+  if (loading) return <LoadingState />;
+  const pro = data?.plan.slug === 'pro' && data.status === 'ACTIVE';
+  return (
+    <>
+      <div className="page-head">
+        <div>
+          <h1>Assinatura</h1>
+          <p>Gerencie seu plano e informações de cobrança.</p>
+        </div>
+        {pro ? (
+          <Button
+            className="secondary"
+            onClick={() =>
+              post(data.cancel_at_period_end ? '/billing/reactivate/' : '/billing/cancel/')
+            }
+          >
+            {data.cancel_at_period_end ? 'Reativar' : 'Cancelar no fim do período'}
+          </Button>
+        ) : (
+          <Button onClick={checkout}>Assinar Pro — R$ 25/mês</Button>
+        )}
+      </div>
+      <section className="billing-current">
+        <span>PLANO ATUAL</span>
+        <h2>
+          {data?.plan.name ?? 'Free'} <small>{data?.status}</small>
+        </h2>
+        <strong>
+          R$ {Number(data?.plan.price ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          <small>/mês</small>
+        </strong>
+        {data?.current_period_end && (
+          <p>
+            Acesso até {new Date(data.current_period_end).toLocaleDateString('pt-BR')}
+            {data.cancel_at_period_end ? ' — cancelamento agendado' : ''}
+          </p>
+        )}
+      </section>
+      <section className="panel">
+        <h2>Histórico de pagamentos</h2>
+        {payments.length ? (
+          <div className="table-wrap flat">
+            <table>
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Referência</th>
+                  <th>Status</th>
+                  <th>Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payments.map((p) => (
+                  <tr key={p.id}>
+                    <td>{new Date(p.created_at).toLocaleDateString('pt-BR')}</td>
+                    <td>{p.provider_payment_id}</td>
+                    <td>{p.status}</td>
+                    <td>R$ {Number(p.amount).toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <EmptyState
+            title="Nenhum pagamento"
+            description="Seu histórico aparecerá após a confirmação do gateway."
+          />
+        )}
+      </section>
+    </>
+  );
+}
+export function NotificationSettings() {
+  const [email, setEmail] = useState(true),
+    [inside, setInside] = useState(true),
+    [ready, setReady] = useState(false);
+  useEffect(() => {
+    api.get('/notification-preferences/').then((r) => {
+      setEmail(r.data.email_enabled);
+      setInside(r.data.in_app_enabled);
+      setReady(true);
+    });
+  }, []);
+  if (!ready) return <LoadingState />;
+  return (
+    <>
+      <div className="page-head">
+        <div>
+          <h1>Preferências de notificações</h1>
+          <p>Escolha como deseja receber atualizações.</p>
+        </div>
+      </div>
+      <section className="settings-card">
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            await api.patch('/notification-preferences/', {
+              email_enabled: email,
+              in_app_enabled: inside,
+            });
+            alert('Preferências salvas.');
+          }}
+        >
+          <label>
+            <input type="checkbox" checked={inside} onChange={(e) => setInside(e.target.checked)} />{' '}
+            Notificações dentro do DevFlow
+          </label>
+          <label>
+            <input type="checkbox" checked={email} onChange={(e) => setEmail(e.target.checked)} />{' '}
+            Notificações por email
+          </label>
+          <Button>Salvar preferências</Button>
+        </form>
+      </section>
+    </>
+  );
+}

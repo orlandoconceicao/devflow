@@ -11,93 +11,268 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('organizations', '0001_initial'),
+        ("organizations", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Client',
+            name="Client",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=160)),
-                ('email', models.EmailField(blank=True, max_length=254)),
-                ('phone', models.CharField(blank=True, max_length=30)),
-                ('company', models.CharField(blank=True, max_length=160)),
-                ('document', models.CharField(blank=True, max_length=40)),
-                ('website', models.URLField(blank=True)),
-                ('notes', models.TextField(blank=True)),
-                ('status', models.CharField(choices=[('ACTIVE', 'Ativo'), ('INACTIVE', 'Inativo'), ('LEAD', 'Lead')], default='ACTIVE', max_length=10)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('created_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='clients_created', to=settings.AUTH_USER_MODEL)),
-                ('organization', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='clients', to='organizations.organization')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=160)),
+                ("email", models.EmailField(blank=True, max_length=254)),
+                ("phone", models.CharField(blank=True, max_length=30)),
+                ("company", models.CharField(blank=True, max_length=160)),
+                ("document", models.CharField(blank=True, max_length=40)),
+                ("website", models.URLField(blank=True)),
+                ("notes", models.TextField(blank=True)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("ACTIVE", "Ativo"),
+                            ("INACTIVE", "Inativo"),
+                            ("LEAD", "Lead"),
+                        ],
+                        default="ACTIVE",
+                        max_length=10,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="clients_created",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "organization",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="clients",
+                        to="organizations.organization",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Project',
+            name="Project",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=180)),
-                ('description', models.TextField(blank=True)),
-                ('status', models.CharField(choices=[('PLANNING', 'Planejamento'), ('ACTIVE', 'Ativo'), ('ON_HOLD', 'Pausado'), ('COMPLETED', 'Concluído'), ('CANCELLED', 'Cancelado')], default='PLANNING', max_length=12)),
-                ('priority', models.CharField(choices=[('LOW', 'Baixa'), ('MEDIUM', 'Média'), ('HIGH', 'Alta'), ('URGENT', 'Urgente')], default='MEDIUM', max_length=10)),
-                ('start_date', models.DateField(blank=True, null=True)),
-                ('due_date', models.DateField(blank=True, null=True)),
-                ('progress', models.PositiveSmallIntegerField(default=0, validators=[django.core.validators.MinValueValidator(0), django.core.validators.MaxValueValidator(100)])),
-                ('budget', models.DecimalField(blank=True, decimal_places=2, max_digits=12, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('client', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='projects', to='work.client')),
-                ('created_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='projects_created', to=settings.AUTH_USER_MODEL)),
-                ('organization', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='projects', to='organizations.organization')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=180)),
+                ("description", models.TextField(blank=True)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("PLANNING", "Planejamento"),
+                            ("ACTIVE", "Ativo"),
+                            ("ON_HOLD", "Pausado"),
+                            ("COMPLETED", "Concluído"),
+                            ("CANCELLED", "Cancelado"),
+                        ],
+                        default="PLANNING",
+                        max_length=12,
+                    ),
+                ),
+                (
+                    "priority",
+                    models.CharField(
+                        choices=[
+                            ("LOW", "Baixa"),
+                            ("MEDIUM", "Média"),
+                            ("HIGH", "Alta"),
+                            ("URGENT", "Urgente"),
+                        ],
+                        default="MEDIUM",
+                        max_length=10,
+                    ),
+                ),
+                ("start_date", models.DateField(blank=True, null=True)),
+                ("due_date", models.DateField(blank=True, null=True)),
+                (
+                    "progress",
+                    models.PositiveSmallIntegerField(
+                        default=0,
+                        validators=[
+                            django.core.validators.MinValueValidator(0),
+                            django.core.validators.MaxValueValidator(100),
+                        ],
+                    ),
+                ),
+                (
+                    "budget",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, max_digits=12, null=True
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "client",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="projects",
+                        to="work.client",
+                    ),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="projects_created",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "organization",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="projects",
+                        to="organizations.organization",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='ProjectMember',
+            name="ProjectMember",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('role', models.CharField(choices=[('PROJECT_MANAGER', 'Gerente'), ('DEVELOPER', 'Desenvolvedor'), ('DESIGNER', 'Designer'), ('MEMBER', 'Membro'), ('CLIENT', 'Cliente')], default='MEMBER', max_length=20)),
-                ('joined_at', models.DateTimeField(auto_now_add=True)),
-                ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='members', to='work.project')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='project_memberships', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "role",
+                    models.CharField(
+                        choices=[
+                            ("PROJECT_MANAGER", "Gerente"),
+                            ("DEVELOPER", "Desenvolvedor"),
+                            ("DESIGNER", "Designer"),
+                            ("MEMBER", "Membro"),
+                            ("CLIENT", "Cliente"),
+                        ],
+                        default="MEMBER",
+                        max_length=20,
+                    ),
+                ),
+                ("joined_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "project",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="members",
+                        to="work.project",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="project_memberships",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='ActivityLog',
+            name="ActivityLog",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('action', models.CharField(max_length=50)),
-                ('entity_type', models.CharField(max_length=50)),
-                ('entity_id', models.PositiveBigIntegerField()),
-                ('metadata', models.JSONField(blank=True, default=dict)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('organization', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='activities', to='organizations.organization')),
-                ('user', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='activities', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("action", models.CharField(max_length=50)),
+                ("entity_type", models.CharField(max_length=50)),
+                ("entity_id", models.PositiveBigIntegerField()),
+                ("metadata", models.JSONField(blank=True, default=dict)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "organization",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="activities",
+                        to="organizations.organization",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="activities",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-created_at'],
-                'indexes': [models.Index(fields=['organization', 'created_at'], name='work_activi_organiz_24da80_idx')],
+                "ordering": ["-created_at"],
+                "indexes": [
+                    models.Index(
+                        fields=["organization", "created_at"],
+                        name="work_activi_organiz_24da80_idx",
+                    )
+                ],
             },
         ),
         migrations.AddIndex(
-            model_name='client',
-            index=models.Index(fields=['organization', 'status'], name='work_client_organiz_f2cf82_idx'),
+            model_name="client",
+            index=models.Index(
+                fields=["organization", "status"], name="work_client_organiz_f2cf82_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='client',
-            index=models.Index(fields=['organization', 'name'], name='work_client_organiz_9af804_idx'),
+            model_name="client",
+            index=models.Index(
+                fields=["organization", "name"], name="work_client_organiz_9af804_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='project',
-            index=models.Index(fields=['organization', 'status'], name='work_projec_organiz_ac6bc2_idx'),
+            model_name="project",
+            index=models.Index(
+                fields=["organization", "status"], name="work_projec_organiz_ac6bc2_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='project',
-            index=models.Index(fields=['organization', 'due_date'], name='work_projec_organiz_f241e1_idx'),
+            model_name="project",
+            index=models.Index(
+                fields=["organization", "due_date"],
+                name="work_projec_organiz_f241e1_idx",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='projectmember',
-            constraint=models.UniqueConstraint(fields=('project', 'user'), name='unique_project_member'),
+            model_name="projectmember",
+            constraint=models.UniqueConstraint(
+                fields=("project", "user"), name="unique_project_member"
+            ),
         ),
     ]

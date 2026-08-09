@@ -1,4 +1,162 @@
-import{useState}from'react';import{Button,EmptyState,LoadingState}from'../components/ui';import{useExpenses,useFinanceDashboard,useInvoices,useRevenues}from'../features/finance/hooks';
-const money=(v:string|number)=>Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-export function FinancePage(){const[tab,setTab]=useState('overview');const d=useFinanceDashboard(),expenses=useExpenses(),revenues=useRevenues(),invoices=useInvoices();if(d.isLoading)return <LoadingState/>;return <><div className="page-head"><div><h1>Financeiro</h1><p>Receitas, despesas, custos e faturamento dos clientes.</p></div></div><div className="tabs"><button className={tab==='overview'?'active':''} onClick={()=>setTab('overview')}>Visão geral</button><button className={tab==='revenues'?'active':''} onClick={()=>setTab('revenues')}>Receitas</button><button className={tab==='expenses'?'active':''} onClick={()=>setTab('expenses')}>Despesas</button><button className={tab==='invoices'?'active':''} onClick={()=>setTab('invoices')}>Faturas</button></div>{tab==='overview'&&<><div className="stats"><article><div><span>Receita</span><strong>{money(d.data?.revenue||0)}</strong></div></article><article><div><span>Despesas</span><strong>{money(d.data?.expenses||0)}</strong></div></article><article><div><span>Custo de horas</span><strong>{money(d.data?.labor_cost||0)}</strong></div></article><article><div><span>Lucro estimado</span><strong>{money(d.data?.profit||0)}</strong></div></article></div><section className="panel section-gap"><h2>Horas por projeto</h2>{d.data?.by_project.length?d.data.by_project.map(x=><div className="bar-row" key={x.project__name}><span>{x.project__name}</span><i style={{width:`${Math.min(100,x.seconds/360)}%`}}/><b>{(x.seconds/3600).toFixed(1)}h</b></div>):<EmptyState title="Sem dados no período"/>}</section></>}{tab==='revenues'&&<DataTable rows={revenues.data?.results||[]} kind="Receitas"/>}{tab==='expenses'&&<DataTable rows={expenses.data?.results||[]} kind="Despesas"/>}{tab==='invoices'&&<section className="panel"><h2>Faturas</h2>{invoices.data?.results.length?<div className="table-wrap flat"><table><thead><tr><th>Número</th><th>Cliente</th><th>Emissão</th><th>Vencimento</th><th>Status</th><th>Total</th></tr></thead><tbody>{invoices.data.results.map(x=><tr key={x.id}><td>{x.number}</td><td>{x.client_name}</td><td>{new Date(x.issued_on+'T00:00').toLocaleDateString('pt-BR')}</td><td>{new Date(x.due_on+'T00:00').toLocaleDateString('pt-BR')}</td><td><span className="badge">{x.status}</span></td><td>{money(x.total)}</td></tr>)}</tbody></table></div>:<EmptyState title="Nenhuma fatura" description="Crie faturas pela API ou pelo próximo formulário de faturamento."/>}</section>}</>}
-function DataTable({rows,kind}:{rows:any[];kind:string}){return <section className="panel"><div className="panel-head"><h2>{kind}</h2><Button disabled>Novo lançamento</Button></div>{rows.length?<div className="table-wrap flat"><table><thead><tr><th>Descrição</th><th>Data</th><th>Valor</th></tr></thead><tbody>{rows.map(x=><tr key={x.id}><td>{x.description}</td><td>{new Date(x.occurred_on+'T00:00').toLocaleDateString('pt-BR')}</td><td>{money(x.amount)}</td></tr>)}</tbody></table></div>:<EmptyState title={`Nenhuma ${kind.toLowerCase()} registrada`}/>}</section>}
+import { useState } from 'react';
+import { Button, EmptyState, LoadingState } from '../components/ui';
+import {
+  useExpenses,
+  useFinanceDashboard,
+  useInvoices,
+  useRevenues,
+} from '../features/finance/hooks';
+const money = (v: string | number) =>
+  Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+export function FinancePage() {
+  const [tab, setTab] = useState('overview');
+  const d = useFinanceDashboard(),
+    expenses = useExpenses(),
+    revenues = useRevenues(),
+    invoices = useInvoices();
+  if (d.isLoading) return <LoadingState />;
+  return (
+    <>
+      <div className="page-head">
+        <div>
+          <h1>Financeiro</h1>
+          <p>Receitas, despesas, custos e faturamento dos clientes.</p>
+        </div>
+      </div>
+      <div className="tabs">
+        <button className={tab === 'overview' ? 'active' : ''} onClick={() => setTab('overview')}>
+          Visão geral
+        </button>
+        <button className={tab === 'revenues' ? 'active' : ''} onClick={() => setTab('revenues')}>
+          Receitas
+        </button>
+        <button className={tab === 'expenses' ? 'active' : ''} onClick={() => setTab('expenses')}>
+          Despesas
+        </button>
+        <button className={tab === 'invoices' ? 'active' : ''} onClick={() => setTab('invoices')}>
+          Faturas
+        </button>
+      </div>
+      {tab === 'overview' && (
+        <>
+          <div className="stats">
+            <article>
+              <div>
+                <span>Receita</span>
+                <strong>{money(d.data?.revenue || 0)}</strong>
+              </div>
+            </article>
+            <article>
+              <div>
+                <span>Despesas</span>
+                <strong>{money(d.data?.expenses || 0)}</strong>
+              </div>
+            </article>
+            <article>
+              <div>
+                <span>Custo de horas</span>
+                <strong>{money(d.data?.labor_cost || 0)}</strong>
+              </div>
+            </article>
+            <article>
+              <div>
+                <span>Lucro estimado</span>
+                <strong>{money(d.data?.profit || 0)}</strong>
+              </div>
+            </article>
+          </div>
+          <section className="panel section-gap">
+            <h2>Horas por projeto</h2>
+            {d.data?.by_project.length ? (
+              d.data.by_project.map((x) => (
+                <div className="bar-row" key={x.project__name}>
+                  <span>{x.project__name}</span>
+                  <i style={{ width: `${Math.min(100, x.seconds / 360)}%` }} />
+                  <b>{(x.seconds / 3600).toFixed(1)}h</b>
+                </div>
+              ))
+            ) : (
+              <EmptyState title="Sem dados no período" />
+            )}
+          </section>
+        </>
+      )}
+      {tab === 'revenues' && <DataTable rows={revenues.data?.results || []} kind="Receitas" />}
+      {tab === 'expenses' && <DataTable rows={expenses.data?.results || []} kind="Despesas" />}
+      {tab === 'invoices' && (
+        <section className="panel">
+          <h2>Faturas</h2>
+          {invoices.data?.results.length ? (
+            <div className="table-wrap flat">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Número</th>
+                    <th>Cliente</th>
+                    <th>Emissão</th>
+                    <th>Vencimento</th>
+                    <th>Status</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invoices.data.results.map((x) => (
+                    <tr key={x.id}>
+                      <td>{x.number}</td>
+                      <td>{x.client_name}</td>
+                      <td>{new Date(x.issued_on + 'T00:00').toLocaleDateString('pt-BR')}</td>
+                      <td>{new Date(x.due_on + 'T00:00').toLocaleDateString('pt-BR')}</td>
+                      <td>
+                        <span className="badge">{x.status}</span>
+                      </td>
+                      <td>{money(x.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <EmptyState
+              title="Nenhuma fatura"
+              description="Crie faturas pela API ou pelo próximo formulário de faturamento."
+            />
+          )}
+        </section>
+      )}
+    </>
+  );
+}
+function DataTable({ rows, kind }: { rows: any[]; kind: string }) {
+  return (
+    <section className="panel">
+      <div className="panel-head">
+        <h2>{kind}</h2>
+        <Button disabled>Novo lançamento</Button>
+      </div>
+      {rows.length ? (
+        <div className="table-wrap flat">
+          <table>
+            <thead>
+              <tr>
+                <th>Descrição</th>
+                <th>Data</th>
+                <th>Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((x) => (
+                <tr key={x.id}>
+                  <td>{x.description}</td>
+                  <td>{new Date(x.occurred_on + 'T00:00').toLocaleDateString('pt-BR')}</td>
+                  <td>{money(x.amount)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <EmptyState title={`Nenhuma ${kind.toLowerCase()} registrada`} />
+      )}
+    </section>
+  );
+}
