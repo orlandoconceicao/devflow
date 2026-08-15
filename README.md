@@ -174,3 +174,11 @@ Credenciais exclusivamente locais: `demo@devflow.local` / `DevFlowDemo!2026`.
 - Segurança: consulte `SECURITY.md`.
 
 O deploy público não é executado automaticamente: domínio, VPS, DNS, certificados, conta Stripe sandbox/produção e credenciais SMTP continuam sendo decisões externas do proprietário.
+
+## Autor
+
+**Orlando Conceição Vilhalba de Almeida**
+
+Desenvolvedor Backend em formação, com foco em Python, Django, Django REST Framework, APIs REST, PostgreSQL, Docker e integração de aplicações web com React e TypeScript.
+
+GitHub: [orlandoconceicao](https://github.com/orlandoconceicao)
