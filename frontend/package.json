@@ -30,7 +30,7 @@
     "@testing-library/user-event": "^14.6.6",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
-    "@vitejs/plugin-react": "^5.0.0",
+    "@vitejs/plugin-react": "^6.1.0",
     "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^10.8.1",
     "globals": "^17.9.0",
