@@ -20,9 +20,9 @@ export function PublicPaymentPage() {
   if (data.status === 'PAID') return <main className="payment-shell"><section className="payment-card payment-success"><CheckCircle2 /><h1>Pagamento confirmado</h1><strong>{money(data.amount)}</strong><p>Pagamento recebido com sucesso.</p></section></main>;
   const unavailable = data.status !== 'PENDING';
   return <main className="payment-shell"><section className="payment-card">
-    <span className="payment-brand">DevFlow</span><h1>Pagamento</h1><p>{data.description}</p>
+    <span className="payment-brand">DevFlow</span><h1>Pagamento</h1><p><b>Cliente:</b> {data.client}</p><p>{data.description}</p>
     <div className="payment-amount"><small>Valor</small><strong>{money(data.amount)}</strong></div>
-    <p><b>Vencimento:</b> {new Date(`${data.due_date}T00:00`).toLocaleDateString('pt-BR')}</p>
+    <p><b>Vencimento:</b> {new Date(`${data.due_date}T00:00`).toLocaleDateString('pt-BR')}</p><p><b>Status:</b> {data.status === 'PENDING' ? 'Aguardando pagamento' : data.status}</p>
     {unavailable ? <div className="payment-expired"><TriangleAlert /><h2>Cobrança {data.status === 'EXPIRED' ? 'expirada' : 'indisponível'}</h2><p>Solicite um novo link ao responsável.</p></div> : <>
       <img className="pix-qr" src={data.qr_code} alt="QR Code Pix da cobrança" />
       <p>Escaneie com o aplicativo do seu banco</p>

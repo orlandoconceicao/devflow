@@ -20,6 +20,10 @@ class Organization(models.Model):
 
 
 class OrganizationMembership(models.Model):
+    class ApprovalStatus(models.TextChoices):
+        APPROVED = "APPROVED", "Aprovado"
+        PENDING = "PENDING", "Aguardando aprovação"
+
     class Role(models.TextChoices):
         OWNER = "OWNER", "Owner"
         ADMIN = "ADMIN", "Admin"
@@ -34,6 +38,9 @@ class OrganizationMembership(models.Model):
     )
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.MEMBER)
     is_active = models.BooleanField(default=True)
+    approval_status = models.CharField(
+        max_length=10, choices=ApprovalStatus.choices, default=ApprovalStatus.APPROVED
+    )
     joined_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -99,3 +106,18 @@ class TeamInvitation(models.Model):
     @property
     def is_expired(self):
         return self.expires_at <= timezone.now()
+
+
+class TeamMessage(models.Model):
+    organization = models.ForeignKey(
+        Organization, on_delete=models.CASCADE, related_name="team_messages"
+    )
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="team_messages"
+    )
+    message = models.CharField(max_length=2000)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+        indexes = [models.Index(fields=["organization", "created_at"])]

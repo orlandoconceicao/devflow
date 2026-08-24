@@ -30,7 +30,7 @@ export function Dashboard() {
           <h1>Bom dia, {user?.first_name} 👋</h1>
           <p>Acompanhe seus projetos e sua equipe.</p>
         </div>
-        <Button onClick={() => location.assign('/projects')}>
+        <Button onClick={() => location.assign('/projects?new=1')}>
           <Plus size={18} /> Novo projeto
         </Button>
       </div>
@@ -112,15 +112,15 @@ export function Dashboard() {
           <p>Complete estas etapas para aproveitar melhor o DevFlow.</p>
         </div>
         <div>
-          <p>
-            1 &nbsp; Personalize seu perfil <ArrowUpRight size={16} />
-          </p>
-          <p>
-            2 &nbsp; Cadastre seus clientes <ArrowUpRight size={16} />
-          </p>
-          <p>
-            3 &nbsp; Crie seu primeiro projeto <ArrowUpRight size={16} />
-          </p>
+          <Link to="/settings/profile" className={data.profile_complete ? 'done' : ''}>
+            {data.profile_complete ? '✓' : '1'} &nbsp; Personalize seu perfil <ArrowUpRight size={16} />
+          </Link>
+          <Link to="/clients?new=1" className={data.has_clients ? 'done' : ''}>
+            {data.has_clients ? '✓' : '2'} &nbsp; Cadastre seus clientes <ArrowUpRight size={16} />
+          </Link>
+          <Link to="/projects?new=1" className={data.has_projects ? 'done' : ''}>
+            {data.has_projects ? '✓' : '3'} &nbsp; Crie seu primeiro projeto <ArrowUpRight size={16} />
+          </Link>
         </div>
       </section>
     </>

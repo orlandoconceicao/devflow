@@ -19,7 +19,7 @@ describe('página pública de pagamento', () => {
     Object.assign(navigator, { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } });
   });
   it('mostra QR, valor e copia o Pix sem autenticação', async () => {
-    getPayment.mockResolvedValue({ description:'Projeto X', amount:'1500.00', due_date:'2026-08-25', status:'PENDING', pix_code:'000201PIX', qr_code:'https://example.test/qr.png', expires_at:'2026-08-25T12:00:00Z' });
+    getPayment.mockResolvedValue({ client:'Cliente Teste', description:'Projeto X', amount:'1500.00', due_date:'2026-08-25', status:'PENDING', pix_code:'000201PIX', qr_code:'https://example.test/qr.png', expires_at:'2026-08-25T12:00:00Z' });
     renderPage();
     expect(await screen.findByText(/1\.500,00/)).toBeInTheDocument();
     expect(screen.getByAltText('QR Code Pix da cobrança')).toHaveAttribute('src','https://example.test/qr.png');
@@ -28,7 +28,7 @@ describe('página pública de pagamento', () => {
     expect(screen.getByText('Código Pix copiado')).toBeInTheDocument();
   });
   it('remove QR e código quando pago', async () => {
-    getPayment.mockResolvedValue({ description:'Projeto X', amount:'1500.00', due_date:'2026-08-25', status:'PAID', pix_code:'secret', qr_code:'https://example.test/qr.png', expires_at:'2026-08-25T12:00:00Z' });
+    getPayment.mockResolvedValue({ client:'Cliente Teste', description:'Projeto X', amount:'1500.00', due_date:'2026-08-25', status:'PAID', pix_code:'secret', qr_code:'https://example.test/qr.png', expires_at:'2026-08-25T12:00:00Z' });
     renderPage();
     expect(await screen.findByText('Pagamento confirmado')).toBeInTheDocument();
     expect(screen.queryByAltText('QR Code Pix da cobrança')).not.toBeInTheDocument();

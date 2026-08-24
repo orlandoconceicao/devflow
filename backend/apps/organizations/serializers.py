@@ -7,7 +7,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.db import transaction
 from django.utils import timezone
 
-from .models import Organization, OrganizationMembership, TeamInvitation
+from .models import Organization, OrganizationMembership, TeamInvitation, TeamMessage
 from .services import create_organization
 
 
@@ -16,8 +16,23 @@ class MembershipSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrganizationMembership
-        fields = ("id", "user", "role", "is_active", "joined_at")
-        read_only_fields = ("is_active",)
+        fields = ("id", "user", "role", "is_active", "approval_status", "joined_at")
+        read_only_fields = ("is_active", "approval_status")
+
+
+class TeamMessageSerializer(serializers.ModelSerializer):
+    author = UserSerializer(read_only=True)
+
+    class Meta:
+        model = TeamMessage
+        fields = ("id", "author", "message", "created_at")
+        read_only_fields = ("author", "created_at")
+
+    def validate_message(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("A mensagem não pode ficar vazia.")
+        return value
 
 
 class TeamInvitationCreateSerializer(serializers.Serializer):

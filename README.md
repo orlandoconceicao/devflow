@@ -25,17 +25,29 @@ Se essas portas já estiverem ocupadas, defina `BACKEND_PORT` e `FRONTEND_PORT` 
 
 ## Execução manual
 
-Requer Python 3.12+, Node 22+ e PostgreSQL 16+.
+Requer Python 3.12+, Node 22+, PostgreSQL 16+ e Redis 7+. O Compose pode
+executar apenas as dependências de infraestrutura, enquanto backend e frontend
+rodam diretamente no Windows:
 
-```bash
+```powershell
+Copy-Item .env.example .env  # somente se o arquivo ainda não existir
+docker compose up -d db redis
+docker compose exec redis redis-cli ping  # deve responder PONG
+
+.\.venv\Scripts\Activate.ps1
 cd backend
-python -m venv .venv
-.venv/Scripts/activate
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py seed_plans
 python manage.py runserver
 ```
+
+Nesse modo, use `DB_HOST=localhost` e
+`REDIS_URL=redis://localhost:6379/0` no `.env`. Quando o backend roda pelo
+Compose, o arquivo `docker-compose.yml` troca esses hosts internamente para
+`db` e `redis`; não use `redis://redis:6379/0` no processo executado diretamente
+no Windows. Antes de iniciar o backend, `docker compose ps redis` deve mostrar o
+serviço como `healthy`.
 
 Em outro terminal:
 
@@ -47,7 +59,7 @@ npm run dev
 
 ## Variáveis de ambiente
 
-Copie `.env.example`. São necessárias `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, `FRONTEND_URL` e `VITE_API_URL`. As variáveis de pagamento só devem ser preenchidas no backend e podem permanecer vazias quando checkout e cobranças Pix não forem usados.
+Copie `.env.example`. São necessárias `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, `REDIS_URL`, `FRONTEND_URL` e `VITE_API_URL`. Redis atende cache/throttling, Channels e Celery, portanto deve estar disponível antes do backend. As variáveis de pagamento só devem ser preenchidas no backend e podem permanecer vazias quando checkout e cobranças Pix não forem usados.
 
 ## Endpoints
 
@@ -167,6 +179,51 @@ O painel permite copiar/abrir o link e gerar novo Pix após expiração. Nenhuma
 ## Portal, notificações e assinatura Pro
 
 O Prompt 5 adiciona portal isolado para clientes, convites com token armazenado como hash, entregas com aprovação ou solicitação de alterações, notificações persistentes, preferências, email assíncrono, Redis, Celery worker/beat e WebSocket autenticado por JWT.
+
+## Fluxos guiados, conta e equipe
+
+O frontend trata os pré-requisitos reais sem transformar relações opcionais em
+obrigatórias: projeto exige cliente; tarefa e lançamento de horas exigem projeto;
+cobrança exige cliente, mas projeto é opcional. Estados vazios oferecem a próxima
+ação permitida. Ao cadastrar um cliente durante a criação de projeto, `returnTo`
+leva de volta ao formulário e seleciona o cliente criado. Os Primeiros Passos do
+dashboard consultam dados reais de perfil, clientes e projetos.
+
+Configurações reúne Perfil, Preferências, Notificações, Equipe, Cobranças e Ajuda.
+O perfil aceita biografia e avatar JPG/PNG/WEBP de até 2 MB. Idioma (`pt-BR` ou
+`en`), timezone IANA e tema (`system`, `light`, `dark`) são persistidos na conta.
+A estrutura de traduções fica centralizada em `frontend/src/i18n`; português
+continua sendo o padrão.
+
+O papel OWNER existente é apresentado como **Primário**, responsável principal
+do workspace. ADMIN e MEMBER são **Secundários**; não existe autopromoção pela UI
+ou API. Quando um Secundário muda o email, a mesma conta e seus relacionamentos
+são preservados, mas as memberships secundárias ficam aguardando aprovação. O
+Primário recebe uma notificação e reativa o acesso pela página Equipe. O chat da
+equipe é cronológico, aceita somente memberships ativas e sempre filtra pelo
+workspace indicado.
+
+A página Ajuda contém FAQ alinhada aos fluxos implementados e contato por
+`orlandoconceicao94@gmail.com`. Feedbacks de perfil, preferências e cópia usam o
+toast compartilhado; nenhum fluxo novo usa `alert()`.
+
+## Entrega de cobranças
+
+Ao escolher **Gerar cobrança Pix agora**, o backend reutiliza a integração Stripe,
+gera um pagamento real e abre imediatamente a página pública com cliente, valor,
+descrição, vencimento, status, QR Code e Pix Copia e Cola. Nenhum QR ou código é
+fabricado localmente. Depois da geração, uma tarefa Celery envia os dados e o link
+ao email cadastrado do cliente.
+
+Para Gmail, use `EMAIL_HOST=smtp.gmail.com`, porta 587, TLS,
+`EMAIL_HOST_USER=orlandoconceicao94@gmail.com` e uma App Password em
+`EMAIL_HOST_PASSWORD`. A App Password nunca deve ser versionada. O backend de
+console permanece apropriado para desenvolvimento e não representa entrega real.
+
+Telefone não é simulado. A arquitetura suporta a WhatsApp Cloud API da Meta com
+`MESSAGE_PROVIDER=meta_whatsapp`, `WHATSAPP_API_URL` (endpoint `/messages` do
+número configurado) e `WHATSAPP_ACCESS_TOKEN`. Sem essas variáveis, o sistema
+registra que o canal foi ignorado e não informa ao usuário que houve envio.
 
 O plano Free permite 3 projetos ativos, 2 membros e 500 MB. O Pro custa R$ 25,00/mês, permite projetos ilimitados, 20 membros, 10 GB, portal do cliente e recursos avançados. Os limites ficam centralizados em `SubscriptionPolicy`; downgrade nunca exclui dados.
 

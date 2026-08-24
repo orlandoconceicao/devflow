@@ -89,3 +89,28 @@ class TeamApiTests(APITestCase):
         url = f"/api/organizations/{self.organization['id']}/members/{membership.id}/"
         self.assertEqual(self.client.delete(url, **self.headers).status_code, 403)
         self.assertEqual(self.client.patch(url, {"role":"MEMBER"}, format="json", **self.headers).status_code, 403)
+
+    def test_team_chat_is_chronological_and_isolated_by_workspace(self):
+        first = self.client.post(
+            "/api/organizations/team-chat/", {"message": "Primeira"}, format="json", **self.headers
+        )
+        second = self.client.post(
+            "/api/organizations/team-chat/", {"message": "Segunda"}, format="json", **self.headers
+        )
+        self.assertEqual(first.status_code, 201)
+        self.assertEqual(second.status_code, 201)
+        messages = self.client.get("/api/organizations/team-chat/", **self.headers)
+        self.assertEqual([row["message"] for row in messages.data], ["Primeira", "Segunda"])
+
+        other = User.objects.create_user(email="chat-other@test.local", password="StrongPass!2026")
+        self.client.force_authenticate(other)
+        other_org = self.client.post("/api/organizations/", {"name": "Chat B"}, format="json").data
+        response = self.client.get(
+            "/api/organizations/team-chat/",
+            HTTP_X_ORGANIZATION_ID=str(self.organization["id"]),
+        )
+        self.assertEqual(response.status_code, 403)
+        own_chat = self.client.get(
+            "/api/organizations/team-chat/", HTTP_X_ORGANIZATION_ID=str(other_org["id"])
+        )
+        self.assertEqual(own_chat.data, [])

@@ -8,6 +8,7 @@ from .views import (
     TeamInvitationAcceptView,
     TeamInvitationCreateView,
     TeamInvitationDetailView,
+    TeamMessageListCreateView,
 )
 
 urlpatterns = [
@@ -18,4 +19,5 @@ urlpatterns = [
     path("<int:pk>/team-invitations/", TeamInvitationCreateView.as_view()),
     path("team-invitations/accept/", TeamInvitationAcceptView.as_view()),
     path("team-invitations/<str:token>/", TeamInvitationDetailView.as_view()),
+    path("team-chat/", TeamMessageListCreateView.as_view()),
 ]

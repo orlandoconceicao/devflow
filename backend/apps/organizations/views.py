@@ -5,12 +5,14 @@ from rest_framework.views import APIView
 from django.utils import timezone
 
 from apps.work.services import log_activity
+from apps.work.context import current_membership
 
 from .models import Organization, OrganizationMembership, TeamInvitation
 from .permissions import IsOrganizationMember, IsOrganizationOwner
 from .serializers import (
     MembershipSerializer, OrganizationSerializer, TeamInvitationAcceptSerializer,
     TeamInvitationCreateSerializer, TeamInvitationPublicSerializer,
+    TeamMessageSerializer,
 )
 from .tasks import send_team_invitation_email
 
@@ -117,6 +119,19 @@ class TeamInvitationAcceptView(APIView):
 
 
 class OrganizationMemberDetailView(APIView):
+    def post(self, request, pk, membership_id):
+        org = owner_organization(request, pk)
+        membership = org.memberships.filter(
+            pk=membership_id,
+            approval_status=OrganizationMembership.ApprovalStatus.PENDING,
+        ).first()
+        if not membership:
+            raise NotFound()
+        membership.is_active = True
+        membership.approval_status = OrganizationMembership.ApprovalStatus.APPROVED
+        membership.save(update_fields=["is_active", "approval_status"])
+        return Response(MembershipSerializer(membership).data)
+
     def patch(self, request, pk, membership_id):
         org = owner_organization(request, pk)
         membership = org.memberships.select_related("user").filter(pk=membership_id).first()
@@ -144,3 +159,16 @@ class OrganizationMemberDetailView(APIView):
         membership.user.project_memberships.filter(project__organization=org).delete()
         log_activity(organization=org, user=request.user, action="TEAM_MEMBER_REMOVED", entity=membership)
         return Response(status=204)
+
+
+class TeamMessageListCreateView(generics.ListCreateAPIView):
+    serializer_class = TeamMessageSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        membership = current_membership(self.request)
+        return membership.organization.team_messages.select_related("author")
+
+    def perform_create(self, serializer):
+        membership = current_membership(self.request)
+        serializer.save(organization=membership.organization, author=self.request.user)

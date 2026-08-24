@@ -5,6 +5,11 @@ export interface User {
   first_name: string;
   last_name: string;
   avatar: string | null;
+  bio: string;
+  language: 'pt-BR' | 'en';
+  timezone: string;
+  theme: 'system' | 'light' | 'dark';
+  pending_workspace_approval: boolean;
 }
 export interface Organization {
   id: number;
@@ -18,8 +23,10 @@ export interface OrganizationMembership {
   user: User;
   role: Role;
   is_active: boolean;
+  approval_status: 'APPROVED' | 'PENDING';
   joined_at: string;
 }
+export interface TeamMessage { id: number; author: User; message: string; created_at: string }
 export interface Plan {
   id: number;
   name: string;
@@ -113,6 +120,9 @@ export interface PaginatedResponse<T> {
   results: T[];
 }
 export interface DashboardData {
+  has_clients: boolean;
+  has_projects: boolean;
+  profile_complete: boolean;
   active_projects: number;
   pending_tasks: number;
   hours_this_month: number;
@@ -242,6 +252,7 @@ export interface AdminPayment {
   public_url: string;
 }
 export interface PublicPayment {
+  client: string;
   description: string;
   amount: string;
   due_date: string;

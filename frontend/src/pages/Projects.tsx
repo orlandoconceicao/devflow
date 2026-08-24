@@ -1,9 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Search, UserPlus, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { ProjectCard } from '../components/ProjectCard';
 import { Kanban } from '../components/Kanban';
@@ -45,7 +45,7 @@ const schema = z
 type Form = z.infer<typeof schema>;
 const statusLabel: Record<ProjectStatus, string> = {
   PLANNING: 'Planejamento',
-  ACTIVE: 'Ativo',
+  ACTIVE: 'Em andamento',
   ON_HOLD: 'Pausado',
   COMPLETED: 'Concluído',
   CANCELLED: 'Cancelado',
@@ -57,6 +57,7 @@ const priorityLabel: Record<ProjectPriority, string> = {
   URGENT: 'Urgente',
 };
 export function ProjectsPage() {
+  const [params] = useSearchParams();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [open, setOpen] = useState(false);
@@ -67,6 +68,7 @@ export function ProjectsPage() {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<Form>({
     resolver: zodResolver(schema),
@@ -81,6 +83,11 @@ export function ProjectsPage() {
       budget: '',
     },
   });
+  useEffect(() => {
+    if (params.get('new') === '1') setOpen(true);
+    const client = Number(params.get('client'));
+    if (client) setValue('client', client);
+  }, [params, setValue]);
   return (
     <>
       <div className="page-head">
@@ -118,6 +125,7 @@ export function ProjectsPage() {
         <EmptyState
           title="Você ainda não possui projetos"
           description="Crie seu primeiro projeto e acompanhe o progresso pelo DevFlow."
+          action={<Button onClick={() => setOpen(true)}><Plus size={17}/> Criar projeto</Button>}
         />
       ) : (
         <div className="project-grid">
@@ -133,6 +141,7 @@ export function ProjectsPage() {
               <h2>Novo projeto</h2>
               <button onClick={() => setOpen(false)}>×</button>
             </div>
+            {!clients.isLoading && !clients.data?.results.length ? <EmptyState title="Nenhum cliente cadastrado" description="Para criar um projeto, primeiro cadastre um cliente." action={<Link className="button" to="/clients?new=1&returnTo=%2Fprojects%3Fnew%3D1">Cadastrar cliente</Link>} /> :
             <form
               onSubmit={handleSubmit(async (v) => {
                 await create.mutateAsync({
@@ -222,7 +231,7 @@ export function ProjectsPage() {
                 </Button>
                 <Button disabled={isSubmitting}>Criar projeto</Button>
               </footer>
-            </form>
+            </form>}
           </div>
         </div>
       )}
@@ -261,9 +270,6 @@ export function ProjectDetail() {
         </div>
         <div>
           <span className={`status status-${p.status.toLowerCase()}`}>{statusLabel[p.status]}</span>
-          <span className={`priority priority-${p.priority.toLowerCase()}`}>
-            {priorityLabel[p.priority]}
-          </span>
         </div>
       </div>
       <nav className="tabs">

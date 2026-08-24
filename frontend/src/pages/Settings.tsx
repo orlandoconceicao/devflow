@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button, EmptyState, Input, LoadingState } from '../components/ui';
+import { useToast } from '../components/Toast';
 import { useAuth } from '../features/auth/AuthContext';
 import { api } from '../services/api';
 import type { Subscription, SubscriptionPayment } from '../types';
@@ -10,11 +11,14 @@ const schema = z.object({
   first_name: z.string().min(2),
   last_name: z.string().min(2),
   avatar: z.string().optional(),
+  email: z.email('Email inválido'),
+  bio: z.string().max(500, 'Use no máximo 500 caracteres'),
 });
 type Form = z.infer<typeof schema>;
 export function ProfilePage() {
   const { user, refreshUser } = useAuth();
-  const [success, setSuccess] = useState(false);
+  const [avatar, setAvatar] = useState<File | null>(null);
+  const toast = useToast();
   const {
     register,
     handleSubmit,
@@ -23,7 +27,7 @@ export function ProfilePage() {
   } = useForm<Form>({ resolver: zodResolver(schema) });
   useEffect(() => {
     if (user)
-      reset({ first_name: user.first_name, last_name: user.last_name, avatar: user.avatar ?? '' });
+      reset({ first_name: user.first_name, last_name: user.last_name, email: user.email, bio: user.bio, avatar: '' });
   }, [user, reset]);
   return (
     <>
@@ -34,11 +38,18 @@ export function ProfilePage() {
         </div>
       </div>
       <section className="settings-card">
+        {user?.pending_workspace_approval && <div className="notice">Aguardando aprovação do Primário após a alteração do email. Seus dados e histórico foram preservados.</div>}
         <form
           onSubmit={handleSubmit(async (v) => {
-            await api.patch('/auth/me/', v);
+            const body = new FormData();
+            body.append('first_name', v.first_name);
+            body.append('last_name', v.last_name);
+            body.append('email', v.email);
+            body.append('bio', v.bio);
+            if (avatar) body.append('avatar', avatar);
+            await api.patch('/auth/me/', body);
             await refreshUser();
-            setSuccess(true);
+            toast(v.email !== user?.email ? 'Perfil atualizado. A alteração de email pode exigir aprovação do Primário.' : 'Perfil atualizado com sucesso.');
           })}
         >
           <div className="form-row">
@@ -53,13 +64,14 @@ export function ProfilePage() {
           </div>
           <label>
             Email
-            <Input value={user?.email ?? ''} readOnly />
+            <Input type="email" {...register('email')} />
+            <small>Secundários precisam de nova aprovação do Primário ao alterar o email.</small>
           </label>
           <label>
-            URL do avatar
-            <Input {...register('avatar')} />
+            Biografia
+            <textarea {...register('bio')} maxLength={500} />
           </label>
-          {success && <div className="success">Perfil atualizado com sucesso.</div>}
+          <label>Foto de perfil<Input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => setAvatar(event.target.files?.[0] || null)} /><small>JPG, PNG ou WEBP, até 2 MB.</small></label>
           <Button disabled={isSubmitting}>Salvar alterações</Button>
         </form>
       </section>
@@ -168,6 +180,7 @@ export function NotificationSettings() {
   const [email, setEmail] = useState(true),
     [inside, setInside] = useState(true),
     [ready, setReady] = useState(false);
+  const toast = useToast();
   useEffect(() => {
     api.get('/notification-preferences/').then((r) => {
       setEmail(r.data.email_enabled);
@@ -192,7 +205,7 @@ export function NotificationSettings() {
               email_enabled: email,
               in_app_enabled: inside,
             });
-            alert('Preferências salvas.');
+            toast('Preferências de notificações salvas com sucesso.');
           }}
         >
           <label>

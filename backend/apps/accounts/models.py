@@ -21,7 +21,11 @@ class UserManager(BaseUserManager):
 class User(AbstractUser):
     username = models.CharField(max_length=150, blank=True, null=True, unique=True)
     email = models.EmailField(unique=True)
-    avatar = models.URLField(blank=True, null=True)
+    avatar = models.FileField(upload_to="avatars/%Y/%m/", blank=True, null=True)
+    bio = models.CharField(max_length=500, blank=True)
+    language = models.CharField(max_length=10, default="pt-BR")
+    timezone = models.CharField(max_length=64, default="America/Cuiaba")
+    theme = models.CharField(max_length=10, default="system")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     USERNAME_FIELD = "email"

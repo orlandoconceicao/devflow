@@ -269,13 +269,14 @@ class AdminPaymentSerializer(serializers.ModelSerializer):
 
 class PublicPaymentSerializer(serializers.ModelSerializer):
     description = serializers.SerializerMethodField()
+    client = serializers.CharField(source="invoice.client.name")
     amount = serializers.DecimalField(max_digits=12, decimal_places=2)
     due_date = serializers.DateField(source="invoice.due_on")
     qr_code = serializers.URLField(source="qr_code_url")
 
     class Meta:
         model = InvoicePayment
-        fields = ("description", "amount", "due_date", "status", "pix_code", "qr_code", "expires_at")
+        fields = ("client", "description", "amount", "due_date", "status", "pix_code", "qr_code", "expires_at")
 
     def get_description(self, obj):
         item = obj.invoice.items.first()

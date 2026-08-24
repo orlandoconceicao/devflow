@@ -1,8 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, Plus, Search, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { Button, EmptyState, ErrorState, Input, LoadingState, Select } from '../components/ui';
 import {
@@ -25,9 +25,12 @@ const schema = z.object({
 });
 type Form = z.infer<typeof schema>;
 export function ClientsPage() {
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [open, setOpen] = useState(false);
+  useEffect(() => { if (params.get('new') === '1') setOpen(true); }, [params]);
   const clients = useClients({ search, status });
   const create = useCreateClient();
   const remove = useDeleteClient();
@@ -84,6 +87,7 @@ export function ClientsPage() {
         <EmptyState
           title="Você ainda não possui clientes"
           description="Cadastre seu primeiro cliente para começar a organizar seus projetos."
+          action={<Button onClick={() => setOpen(true)}><Plus size={17}/> Cadastrar cliente</Button>}
         />
       ) : (
         <div className="table-wrap">
@@ -144,9 +148,11 @@ export function ClientsPage() {
             </div>
             <form
               onSubmit={handleSubmit(async (v) => {
-                await create.mutateAsync(v);
+                const client = await create.mutateAsync(v);
                 reset();
                 setOpen(false);
+                const returnTo = params.get('returnTo');
+                if (returnTo?.startsWith('/')) navigate(`${returnTo}${returnTo.includes('?') ? '&' : '?'}client=${client.id}`);
               })}
             >
               <div className="form-row">

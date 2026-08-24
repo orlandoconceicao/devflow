@@ -25,6 +25,7 @@ import { NotFoundPage } from './pages/Errors';
 import { PublicPaymentPage } from './pages/PublicPayment';
 import { TeamPage } from './pages/Team';
 import { TeamInvitationPage } from './pages/TeamInvitation';
+import { HelpPage, PreferencesPage, SettingsHome, TeamChatPage } from './pages/AccountPages';
 function Protected() {
   const { isAuthenticated, isLoading } = useAuth();
   if (isLoading) return <LoadingState />;
@@ -72,6 +73,7 @@ export default function App() {
         <Route path="/finance" element={<FinancePage />} />
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/team" element={<TeamPage />} />
+        <Route path="/team/chat" element={<TeamChatPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/client-portal" element={<ClientPortal />} />
         <Route path="/client-portal/projects/:id" element={<ClientProject />} />
@@ -79,8 +81,11 @@ export default function App() {
         <Route path="/billing/success" element={<BillingResult />} />
         <Route path="/billing/cancel" element={<BillingResult cancel />} />
         <Route path="/settings/profile" element={<ProfilePage />} />
+        <Route path="/settings" element={<SettingsHome />} />
+        <Route path="/settings/preferences" element={<PreferencesPage />} />
         <Route path="/settings/billing" element={<BillingPage />} />
         <Route path="/settings/notifications" element={<NotificationSettings />} />
+        <Route path="/help" element={<HelpPage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

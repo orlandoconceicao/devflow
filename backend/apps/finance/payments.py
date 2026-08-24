@@ -101,6 +101,9 @@ def generate_pix(invoice, *, regenerate=False, provider=None):
     if invoice.status == Invoice.Status.DRAFT:
         invoice.status = Invoice.Status.SENT
         invoice.save(update_fields=["status"])
+    from .tasks import deliver_invoice_payment
+
+    transaction.on_commit(lambda: deliver_invoice_payment.delay(payment.id))
     return payment
 
 

@@ -1,12 +1,14 @@
 import { Button } from '../components/ui';
 import { api } from '../services/api';
+import { useToast } from '../components/Toast';
 export function PricingPage() {
+  const toast = useToast();
   const checkout = async () => {
     try {
       const { data } = await api.post<{ url: string }>('/billing/checkout/');
       location.assign(data.url);
     } catch {
-      alert('Configure o Stripe em modo de teste para iniciar o checkout.');
+      toast('Configure o Stripe em modo de teste para iniciar o checkout.', 'warning');
     }
   };
   return (

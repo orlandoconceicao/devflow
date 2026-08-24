@@ -227,7 +227,7 @@ class PublicPixPaymentTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["pix_code"], "000201PIXTEST")
         self.assertEqual(response.data["qr_code"], "https://example.test/qr.png")
-        self.assertEqual(set(response.data), {"description", "amount", "due_date", "status", "pix_code", "qr_code", "expires_at"})
+        self.assertEqual(set(response.data), {"client", "description", "amount", "due_date", "status", "pix_code", "qr_code", "expires_at"})
         self.assertEqual(self.client.patch(f"/api/public/payments/{token}/", {"amount": "1"}, format="json").status_code, 405)
         self.assertEqual(self.client.get("/api/public/payments/00000000-0000-0000-0000-000000000000/").status_code, 404)
 

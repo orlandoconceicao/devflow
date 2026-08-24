@@ -490,5 +490,8 @@ def dashboard(request):
                 upcoming, many=True, context={"request": request}
             ).data,
             "recent_activity": ActivitySerializer(activities, many=True).data,
+            "has_clients": Client.objects.filter(organization=m.organization).exists(),
+            "has_projects": projects.exists(),
+            "profile_complete": bool(request.user.first_name and request.user.last_name and request.user.bio),
         }
     )

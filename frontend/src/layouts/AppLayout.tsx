@@ -7,6 +7,7 @@ import {
   Clock3,
   LayoutDashboard,
   Menu,
+  MessageCircle,
   Search,
   Settings,
   Users,
@@ -27,6 +28,7 @@ const workspaceLinks = [
   ['/time', 'Horas', Clock3],
   ['/clients', 'Clientes', Users],
   ['/team', 'Equipe', Users],
+  ['/team/chat', 'Chat da equipe', MessageCircle],
   ['/finance', 'Financeiro', WalletCards],
   ['/reports', 'Relatórios', Clock3],
 ] as const;
@@ -35,7 +37,7 @@ const linksForRole = (role: Role | null) => {
   if (role === 'OWNER') return workspaceLinks;
   if (role === 'ADMIN') return workspaceLinks.filter(([to]) => to !== '/team');
   return workspaceLinks.filter(([to]) =>
-    ['/dashboard', '/projects', '/tasks', '/time', '/reports'].includes(to),
+    ['/dashboard', '/projects', '/tasks', '/time', '/reports', '/team/chat'].includes(to),
   );
 };
 export function AppLayout() {
@@ -53,7 +55,9 @@ export function AppLayout() {
   const isClientCommonRoute =
     location.pathname === '/notifications' ||
     location.pathname === '/settings/profile' ||
-    location.pathname === '/settings/notifications';
+    location.pathname.startsWith('/settings') ||
+    location.pathname === '/help';
+  const isAccountRoute = location.pathname.startsWith('/settings') || location.pathname === '/help';
   const roleRouteMismatch =
     role !== null &&
     ((role === 'CLIENT' && !isClientRoute && !isClientCommonRoute) ||
@@ -79,7 +83,7 @@ export function AppLayout() {
         }
         localStorage.removeItem('organization_id');
         setWorkspace('missing');
-        if (!location.pathname.startsWith('/onboarding')) {
+        if (!location.pathname.startsWith('/onboarding') && !isAccountRoute) {
           navigate('/onboarding/workspace', { replace: true });
         }
       })
@@ -89,7 +93,7 @@ export function AppLayout() {
     return () => {
       active = false;
     };
-  }, [location.pathname, navigate]);
+  }, [location.pathname, navigate, isAccountRoute]);
   return (
     <div className="shell">
       <button className="mobile-menu" onClick={() => setOpen(!open)}>
@@ -108,26 +112,26 @@ export function AppLayout() {
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <NavLink to="/settings/profile">
+          <NavLink to="/settings">
             <Settings size={18} />
             Configurações
           </NavLink>
-          <NavLink to="/settings/notifications">
+          <NavLink to="/settings/preferences">
             <Bell size={18} />
             Preferências
           </NavLink>
-          <a href="#help">
+          <NavLink to="/help">
             <CircleHelp size={18} />
             Ajuda
-          </a>
-          <div className="profile">
+          </NavLink>
+          <Link className="profile" to="/settings/profile">
             <Avatar name={user?.first_name || 'U'} url={user?.avatar} />
             <span>
               {user?.first_name}
               <small>{user?.email}</small>
             </span>
             <ChevronDown size={15} />
-          </div>
+          </Link>
         </div>
       </aside>
       <main>
@@ -140,14 +144,14 @@ export function AppLayout() {
             <Bell size={20} />
             {!!unread.data?.count && <b>{unread.data.count}</b>}
           </Link>
-          <Avatar name={user?.first_name || 'U'} url={user?.avatar} />
+          <Link to="/settings/profile" aria-label="Abrir perfil"><Avatar name={user?.first_name || 'U'} url={user?.avatar} /></Link>
         </header>
         <div className="content">
           {workspace === 'loading' || roleRouteMismatch ? (
             <LoadingState />
           ) : workspace === 'error' ? (
             <div className="form-error">Não foi possível carregar o workspace.</div>
-          ) : workspace === 'missing' && !location.pathname.startsWith('/onboarding') ? (
+          ) : workspace === 'missing' && !location.pathname.startsWith('/onboarding') && !isAccountRoute ? (
             <LoadingState />
           ) : (
             <Outlet />

@@ -14,15 +14,18 @@ export function ErrorState({ message = 'Não foi possível carregar.' }: { messa
 export function EmptyState({
   title = 'Em breve',
   description = 'Estamos preparando este espaço.',
+  action,
 }: {
   title?: string;
   description?: string;
+  action?: ReactNode;
 }) {
   return (
     <div className="empty">
       <span>✦</span>
       <h3>{title}</h3>
       <p>{description}</p>
+      {action}
     </div>
   );
 }

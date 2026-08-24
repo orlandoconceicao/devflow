@@ -4,7 +4,8 @@ import { useAuth } from '../features/auth/AuthContext';
 import { useProjects } from '../features/work/hooks';
 import { useTasks } from '../features/tasks/hooks';
 import { TaskDetails } from '../components/Kanban';
-import { EmptyState, ErrorState, LoadingState, Select } from '../components/ui';
+import { Button, EmptyState, ErrorState, LoadingState, Select } from '../components/ui';
+import { Link } from 'react-router-dom';
 import type { TaskStatus } from '../types';
 import { formatDate } from '../utils/format';
 const status: Record<TaskStatus, string> = {
@@ -22,11 +23,13 @@ export function TasksPage() {
   const [priority, setPriority] = useState('');
   const [mine, setMine] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
   const tasks = useTasks({
     search,
     project,
     status: taskStatus,
     priority,
+    page,
     ...(mine && user ? { assignees__user: user.id } : {}),
   });
   const projects = useProjects();
@@ -86,6 +89,7 @@ export function TasksPage() {
         <EmptyState
           title="Nenhuma tarefa encontrada"
           description="Ajuste os filtros ou crie uma tarefa pelo Kanban do projeto."
+          action={projects.data?.results.length ? <Link className="button" to={`/projects/${projects.data.results[0].id}`}>Abrir projeto e criar tarefa</Link> : <Link className="button" to="/projects?new=1">Criar projeto</Link>}
         />
       ) : (
         <div className="table-wrap">
@@ -139,6 +143,7 @@ export function TasksPage() {
           </table>
         </div>
       )}
+      {!!tasks.data?.count && tasks.data.count > tasks.data.results.length && <nav className="pagination" aria-label="Paginação de tarefas"><Button className="secondary" disabled={!tasks.data.previous} onClick={() => setPage((value) => Math.max(1, value - 1))}>Anterior</Button><span>Página {page}</span><Button className="secondary" disabled={!tasks.data.next} onClick={() => setPage((value) => value + 1)}>Próxima</Button></nav>}
       {selected && (
         <TaskDetails
           taskId={selected}

@@ -38,6 +38,8 @@ export const organizationService = {
     api.patch<OrganizationMembership>(`/organizations/${organizationId}/members/${membershipId}/`, { role }).then((r) => r.data),
   removeMember: (organizationId: number, membershipId: number) =>
     api.delete(`/organizations/${organizationId}/members/${membershipId}/`),
+  approveMember: (organizationId: number, membershipId: number) =>
+    api.post<OrganizationMembership>(`/organizations/${organizationId}/members/${membershipId}/`).then((r) => r.data),
 };
 export const clientService = {
   list: (params?: Record<string, string | number>) =>
