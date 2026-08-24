@@ -1,11 +1,13 @@
+import uuid
 from dataclasses import dataclass
-from datetime import UTC, datetime
-from decimal import Decimal, ROUND_HALF_UP
+from datetime import datetime
+from decimal import Decimal
 
 from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction
 from django.utils import timezone
+
+from apps.payments.mercado_pago import MercadoPagoClient, MercadoPagoError
 
 from .models import Invoice, InvoicePayment, InvoicePaymentEvent, Revenue
 
@@ -18,61 +20,35 @@ class PaymentProviderError(Exception):
 class PixResult:
     provider_payment_id: str
     pix_code: str
-    qr_code_url: str
+    qr_code: str
     expires_at: datetime
 
 
-class StripePixProvider:
-    def __init__(self):
-        if settings.PAYMENT_PROVIDER != "stripe" or not settings.PAYMENT_API_KEY:
-            raise ImproperlyConfigured("Configure PAYMENT_PROVIDER=stripe e PAYMENT_API_KEY.")
-        import stripe
-
-        self.stripe = stripe
-        stripe.api_key = settings.PAYMENT_API_KEY
+class MercadoPagoPixService:
+    def __init__(self, client=None):
+        self.client = client or MercadoPagoClient()
 
     def create(self, invoice, token):
-        amount = int(
-            (Decimal(invoice.total) * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
-        )
         try:
-            intent = self.stripe.PaymentIntent.create(
-                amount=amount,
-                currency="brl",
-                payment_method_types=["pix"],
-                payment_method_data={"type": "pix"},
-                payment_method_options={
-                    "pix": {"expires_after_seconds": settings.PIX_EXPIRATION_SECONDS}
-                },
-                confirm=True,
-                description=f"Fatura {invoice.number}",
-                metadata={"invoice_id": str(invoice.pk), "public_token": str(token)},
-                idempotency_key=f"devflow-invoice-pix-{invoice.pk}-{token}",
-            )
-            qr = intent.next_action.pix_display_qr_code
-            return PixResult(
-                provider_payment_id=intent.id,
-                pix_code=qr.data,
-                qr_code_url=qr.image_url_png,
-                expires_at=datetime.fromtimestamp(qr.expires_at, tz=UTC),
-            )
-        except Exception as exc:
-            raise PaymentProviderError("Não foi possível gerar a cobrança Pix.") from exc
-
-    def parse_webhook(self, payload, signature):
-        if not settings.PIX_WEBHOOK_SECRET:
-            raise ImproperlyConfigured("Configure PIX_WEBHOOK_SECRET.")
-        return self.stripe.Webhook.construct_event(
-            payload, signature, settings.PIX_WEBHOOK_SECRET
+            result = self.client.create_pix(invoice, token)
+        except MercadoPagoError as exc:
+            raise PaymentProviderError(
+                "Não foi possível gerar a cobrança Pix."
+            ) from exc
+        return PixResult(
+            provider_payment_id=result.payment_id,
+            pix_code=result.pix_code,
+            qr_code=result.qr_code,
+            expires_at=result.expires_at,
         )
 
 
-def get_pix_provider():
-    return StripePixProvider()
+def get_pix_service():
+    return MercadoPagoPixService()
 
 
 @transaction.atomic
-def generate_pix(invoice, *, regenerate=False, provider=None):
+def generate_pix(invoice, *, regenerate=False, service=None):
     invoice = Invoice.objects.select_for_update().get(pk=invoice.pk)
     if invoice.status in (Invoice.Status.PAID, Invoice.Status.CANCELLED):
         raise PaymentProviderError("Esta fatura não aceita uma nova cobrança.")
@@ -85,17 +61,19 @@ def generate_pix(invoice, *, regenerate=False, provider=None):
     if invoice.total <= 0:
         raise PaymentProviderError("A cobrança deve possuir valor maior que zero.")
 
-    import uuid
-
-    token = uuid.uuid4()
-    result = (provider or get_pix_provider()).create(invoice, token)
+    attempt = invoice.payments.count() + 1
+    token = uuid.uuid5(
+        uuid.NAMESPACE_URL,
+        f"{settings.SECRET_KEY}:invoice:{invoice.pk}:attempt:{attempt}",
+    )
+    result = (service or get_pix_service()).create(invoice, token)
     payment = InvoicePayment.objects.create(
         invoice=invoice,
         public_token=token,
         provider_payment_id=result.provider_payment_id,
         amount=invoice.total,
         pix_code=result.pix_code,
-        qr_code_url=result.qr_code_url,
+        qr_code=result.qr_code,
         expires_at=result.expires_at,
     )
     if invoice.status == Invoice.Status.DRAFT:
@@ -108,28 +86,27 @@ def generate_pix(invoice, *, regenerate=False, provider=None):
 
 
 @transaction.atomic
-def process_stripe_event(event):
-    event_id = event["id"]
-    event_type = event["type"]
-    intent = event["data"]["object"]
+def process_mercado_pago_payment(payment_data, event_id):
     payment = (
         InvoicePayment.objects.select_for_update()
         .select_related("invoice", "invoice__organization", "invoice__client")
-        .filter(provider_payment_id=intent.get("id"))
+        .filter(provider_payment_id=str(payment_data.get("id")))
         .first()
     )
-    _, event_created = InvoicePaymentEvent.objects.get_or_create(
+    event_type = str(payment_data.get("status", "unknown"))
+    _, created = InvoicePaymentEvent.objects.get_or_create(
         provider_event_id=event_id,
         defaults={"event_type": event_type, "payment": payment},
     )
-    if not event_created:
+    if not created:
         return "duplicate"
     if not payment:
         return "ignored"
-    if event_type == "payment_intent.succeeded":
-        expected = int((payment.amount * 100).quantize(Decimal("1")))
-        received = intent.get("amount_received", intent.get("amount"))
-        if received != expected or str(intent.get("currency", "")).lower() != "brl":
+    if payment_data.get("external_reference") != f"invoice:{payment.invoice_id}":
+        raise PaymentProviderError("Referência externa divergente no webhook.")
+    if event_type == "approved":
+        amount = Decimal(str(payment_data.get("transaction_amount", "0")))
+        if amount != payment.amount or payment_data.get("currency_id") != "BRL":
             raise PaymentProviderError("Valor ou moeda divergente no webhook.")
         if payment.status != InvoicePayment.Status.PAID:
             now = timezone.now()
@@ -153,13 +130,14 @@ def process_stripe_event(event):
                 },
             )
         return "paid"
-    if event_type in ("payment_intent.payment_failed", "payment_intent.canceled"):
-        if payment.status != InvoicePayment.Status.PAID:
-            payment.status = (
-                InvoicePayment.Status.EXPIRED
-                if event_type == "payment_intent.canceled"
-                else InvoicePayment.Status.FAILED
-            )
-            payment.save(update_fields=["status", "updated_at"])
+    status_map = {
+        "cancelled": InvoicePayment.Status.CANCELLED,
+        "rejected": InvoicePayment.Status.FAILED,
+        "refunded": InvoicePayment.Status.CANCELLED,
+        "charged_back": InvoicePayment.Status.FAILED,
+    }
+    if event_type in status_map and payment.status != InvoicePayment.Status.PAID:
+        payment.status = status_map[event_type]
+        payment.save(update_fields=["status", "updated_at"])
         return "failed"
     return "ignored"

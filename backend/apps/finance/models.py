@@ -197,7 +197,7 @@ class InvoicePayment(models.Model):
         Invoice, on_delete=models.PROTECT, related_name="payments"
     )
     public_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
-    provider = models.CharField(max_length=20, default="stripe")
+    provider = models.CharField(max_length=20, default="mercado_pago")
     provider_payment_id = models.CharField(max_length=120, unique=True)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     currency = models.CharField(max_length=3, default="BRL")
@@ -205,7 +205,7 @@ class InvoicePayment(models.Model):
         max_length=12, choices=Status.choices, default=Status.PENDING
     )
     pix_code = models.TextField()
-    qr_code_url = models.URLField(max_length=1000)
+    qr_code = models.TextField()
     expires_at = models.DateTimeField()
     paid_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -217,7 +217,7 @@ class InvoicePayment(models.Model):
 
 
 class InvoicePaymentEvent(models.Model):
-    provider = models.CharField(max_length=20, default="stripe")
+    provider = models.CharField(max_length=20, default="mercado_pago")
     provider_event_id = models.CharField(max_length=120, unique=True)
     event_type = models.CharField(max_length=80)
     payment = models.ForeignKey(

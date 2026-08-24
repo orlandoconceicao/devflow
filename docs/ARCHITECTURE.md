@@ -10,7 +10,7 @@ Toda entidade de negócio carrega ou deriva `organization`. O header `X-Organiza
 
 ## Billing
 
-O preço Pro de R$ 25/mês é cadastrado pelo backend. Checkout usa um Price ID Stripe conhecido. O retorno do navegador não ativa recursos: somente webhooks validados pelo SDK oficial atualizam a assinatura. `PaymentEvent.provider_event_id` garante idempotência e o pagamento exige 2.500 centavos em BRL.
+O preço Pro de R$ 25/mês é definido pelo backend e enviado à API de preapproval do Mercado Pago. O retorno do navegador não ativa recursos: somente webhooks HMAC validados, seguidos de consulta autenticada do recurso, atualizam a assinatura. `PaymentEvent.provider_event_id` garante idempotência e o pagamento exige R$ 25 em BRL.
 
 ## Assíncrono e tempo real
 

@@ -1,5 +1,5 @@
 from datetime import timedelta
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from django.core.management import call_command
 from django.utils import timezone
@@ -8,7 +8,7 @@ from rest_framework.test import APITestCase
 from apps.accounts.models import User
 from apps.organizations.models import OrganizationMembership
 from .models import Invoice, InvoicePayment, Revenue
-from .payments import PaymentProviderError, PixResult, process_stripe_event
+from .payments import PaymentProviderError, PixResult, process_mercado_pago_payment
 
 
 class FinanceApiTests(APITestCase):
@@ -184,19 +184,19 @@ class PublicPixPaymentTests(APITestCase):
         }
 
     def pix_result(self):
-        return PixResult("pi_test_123", "000201PIXTEST", "https://example.test/qr.png", timezone.now() + timedelta(hours=1))
+        return PixResult("mp_test_123", "000201PIXTEST", "data:image/png;base64,dGVzdA==", timezone.now() + timedelta(hours=1))
 
     def create_invoice(self):
         response = self.client.post("/api/invoices/", self.invoice_data, format="json", **self.headers)
         self.assertEqual(response.status_code, 201, response.data)
         return response
 
-    def test_owner_and_admin_can_create_but_member_cannot(self):
+    def test_only_owner_can_create_financial_records(self):
         self.assertEqual(self.create_invoice().data["total"], "1500.00")
         OrganizationMembership.objects.create(organization_id=self.organization_id, user=self.admin_user, role="ADMIN")
         self.client.force_authenticate(self.admin_user)
         admin_data = {**self.invoice_data, "number": "PIX-ADMIN"}
-        self.assertEqual(self.client.post("/api/invoices/", admin_data, format="json", **self.headers).status_code, 201)
+        self.assertEqual(self.client.post("/api/invoices/", admin_data, format="json", **self.headers).status_code, 403)
         OrganizationMembership.objects.create(organization_id=self.organization_id, user=self.member, role="MEMBER")
         self.client.force_authenticate(self.member)
         self.assertEqual(self.client.post("/api/invoices/", self.invoice_data, format="json", **self.headers).status_code, 403)
@@ -205,7 +205,7 @@ class PublicPixPaymentTests(APITestCase):
         invalid = {**self.invoice_data, "number": "PIX-002", "due_on": "2026-08-22", "items": [{"description": "X", "quantity": "1", "unit_price": "0"}]}
         self.assertEqual(self.client.post("/api/invoices/", invalid, format="json", **self.headers).status_code, 400)
 
-    @patch("apps.finance.payments.get_pix_provider")
+    @patch("apps.finance.payments.get_pix_service")
     def test_provider_creates_real_payload_and_generation_is_idempotent(self, provider_factory):
         provider_factory.return_value.create.return_value = self.pix_result()
         invoice = self.create_invoice()
@@ -216,7 +216,7 @@ class PublicPixPaymentTests(APITestCase):
         self.assertEqual(InvoicePayment.objects.count(), 1)
         provider_factory.return_value.create.assert_called_once()
 
-    @patch("apps.finance.payments.get_pix_provider")
+    @patch("apps.finance.payments.get_pix_service")
     def test_public_page_needs_no_auth_and_exposes_only_allowed_fields(self, provider_factory):
         provider_factory.return_value.create.return_value = self.pix_result()
         invoice = self.create_invoice()
@@ -226,12 +226,12 @@ class PublicPixPaymentTests(APITestCase):
         response = self.client.get(f"/api/public/payments/{token}/")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["pix_code"], "000201PIXTEST")
-        self.assertEqual(response.data["qr_code"], "https://example.test/qr.png")
+        self.assertEqual(response.data["qr_code"], "data:image/png;base64,dGVzdA==")
         self.assertEqual(set(response.data), {"client", "description", "amount", "due_date", "status", "pix_code", "qr_code", "expires_at"})
         self.assertEqual(self.client.patch(f"/api/public/payments/{token}/", {"amount": "1"}, format="json").status_code, 405)
         self.assertEqual(self.client.get("/api/public/payments/00000000-0000-0000-0000-000000000000/").status_code, 404)
 
-    @patch("apps.finance.payments.get_pix_provider")
+    @patch("apps.finance.payments.get_pix_service")
     def test_provider_failure_is_controlled(self, provider_factory):
         provider_factory.return_value.create.side_effect = PaymentProviderError("indisponível")
         invoice = self.create_invoice()
@@ -239,50 +239,50 @@ class PublicPixPaymentTests(APITestCase):
         self.assertEqual(response.status_code, 502)
         self.assertEqual(InvoicePayment.objects.count(), 0)
 
-    @patch("apps.finance.payments.get_pix_provider")
+    @patch("apps.finance.payments.get_pix_service")
     def test_paid_webhook_is_idempotent_and_creates_one_revenue(self, provider_factory):
         provider_factory.return_value.create.return_value = self.pix_result()
         invoice_response = self.create_invoice()
         self.client.post(f"/api/invoices/{invoice_response.data['id']}/generate-payment/", {}, format="json", **self.headers)
-        event = {"id": "evt_paid", "type": "payment_intent.succeeded", "data": {"object": {"id": "pi_test_123", "amount_received": 150000, "currency": "brl"}}}
-        self.assertEqual(process_stripe_event(event), "paid")
-        self.assertEqual(process_stripe_event(event), "duplicate")
+        payment = {"id": "mp_test_123", "status": "approved", "transaction_amount": "1500.00", "currency_id": "BRL", "external_reference": f"invoice:{invoice_response.data['id']}"}
+        self.assertEqual(process_mercado_pago_payment(payment, "evt_paid"), "paid")
+        self.assertEqual(process_mercado_pago_payment(payment, "evt_paid"), "duplicate")
         self.assertEqual(Revenue.objects.filter(invoice_id=invoice_response.data["id"]).count(), 1)
         self.assertEqual(Invoice.objects.get(pk=invoice_response.data["id"]).status, Invoice.Status.PAID)
 
-    @patch("apps.finance.payments.get_pix_provider")
+    @patch("apps.finance.payments.get_pix_service")
     def test_webhook_rejects_wrong_amount_and_preserves_pending(self, provider_factory):
         provider_factory.return_value.create.return_value = self.pix_result()
         invoice_response = self.create_invoice()
         self.client.post(f"/api/invoices/{invoice_response.data['id']}/generate-payment/", {}, format="json", **self.headers)
-        event = {"id": "evt_wrong", "type": "payment_intent.succeeded", "data": {"object": {"id": "pi_test_123", "amount_received": 1, "currency": "brl"}}}
-        with self.assertRaises(PaymentProviderError): process_stripe_event(event)
+        payment = {"id": "mp_test_123", "status": "approved", "transaction_amount": "0.01", "currency_id": "BRL", "external_reference": f"invoice:{invoice_response.data['id']}"}
+        with self.assertRaises(PaymentProviderError): process_mercado_pago_payment(payment, "evt_wrong")
         self.assertEqual(InvoicePayment.objects.get().status, InvoicePayment.Status.PENDING)
         self.assertFalse(Revenue.objects.exists())
 
-    @patch("apps.finance.views.get_pix_provider")
-    def test_webhook_validates_provider_signature(self, provider_factory):
-        provider = Mock()
-        provider_factory.return_value = provider
-        provider.parse_webhook.side_effect = ValueError("invalid signature")
+    @patch("apps.subscriptions.views.MercadoPagoClient")
+    def test_webhook_validates_provider_signature(self, client_class):
+        client_class.verify_webhook.return_value = False
         invalid = self.client.post(
-            "/api/webhooks/payments/stripe/invoices/",
-            data=b"{}",
-            content_type="application/json",
-            HTTP_STRIPE_SIGNATURE="invalid",
+            "/api/webhooks/mercado-pago/?data.id=mp_missing&type=payment",
+            data={"type": "payment", "data": {"id": "mp_missing"}},
+            format="json",
+            HTTP_X_SIGNATURE="invalid",
+            HTTP_X_REQUEST_ID="request-id",
         )
         self.assertEqual(invalid.status_code, 400)
-        provider.parse_webhook.side_effect = None
-        provider.parse_webhook.return_value = {
-            "id": "evt_unknown",
-            "type": "payment_intent.payment_failed",
-            "data": {"object": {"id": "pi_missing"}},
+        client_class.verify_webhook.return_value = True
+        client_class.return_value.get_payment.return_value = {
+            "id": "mp_missing",
+            "status": "rejected",
+            "external_reference": "invoice:999",
         }
         valid = self.client.post(
-            "/api/webhooks/payments/stripe/invoices/",
-            data=b"{}",
-            content_type="application/json",
-            HTTP_STRIPE_SIGNATURE="valid",
+            "/api/webhooks/mercado-pago/?data.id=mp_missing&type=payment",
+            data={"type": "payment", "data": {"id": "mp_missing"}},
+            format="json",
+            HTTP_X_SIGNATURE="valid",
+            HTTP_X_REQUEST_ID="request-id",
         )
         self.assertEqual(valid.status_code, 200)
         self.assertEqual(valid.data["result"], "ignored")

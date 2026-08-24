@@ -272,7 +272,7 @@ class PublicPaymentSerializer(serializers.ModelSerializer):
     client = serializers.CharField(source="invoice.client.name")
     amount = serializers.DecimalField(max_digits=12, decimal_places=2)
     due_date = serializers.DateField(source="invoice.due_on")
-    qr_code = serializers.URLField(source="qr_code_url")
+    qr_code = serializers.CharField()
 
     class Meta:
         model = InvoicePayment

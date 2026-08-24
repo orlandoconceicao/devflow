@@ -33,7 +33,7 @@ class Subscription(models.Model):
         max_length=12, choices=Status.choices, default=Status.ACTIVE
     )
     provider = models.CharField(max_length=20, blank=True)
-    provider_customer_id = models.CharField(max_length=100, blank=True)
+    provider_payer_id = models.CharField(max_length=100, blank=True)
     provider_subscription_id = models.CharField(max_length=100, blank=True)
     started_at = models.DateTimeField(auto_now_add=True)
     current_period_start = models.DateTimeField(null=True, blank=True)

@@ -156,7 +156,7 @@ Uploads aceitam PDF, PNG, JPG/JPEG, WEBP, TXT, DOCX e XLSX, com limite de 10 MB 
 - Free: R$ 0/mês.
 - DevFlow Pro: R$ 25/mês.
 
-O backend é a fonte de verdade dos preços. A assinatura SaaS usa Stripe Checkout e as faturas de clientes podem usar Pix dinâmico; o DevFlow não armazena dados de cartão.
+O backend é a fonte de verdade dos preços. A assinatura SaaS e as faturas de clientes usam Mercado Pago; o DevFlow não armazena dados de cartão nem credenciais do pagador.
 
 ## Horas, financeiro e relatórios
 
@@ -172,7 +172,7 @@ A implementação reutiliza `Invoice`, itens em `Decimal`, `Client`, `Project` o
 
 O UUID público é imprevisível e não enumera IDs. `GET /api/public/payments/<uuid>/` não exige autenticação e retorna apenas descrição, valor, vencimento, status, QR, Pix Copia e Cola e expiração. Não permite editar valor/cliente/status nem expõe custos, workspace, IDs internos ou credenciais.
 
-O Stripe cria um `PaymentIntent` Pix dinâmico no backend. QR e Copia e Cola vêm do provedor e identificam aquela cobrança; não são uma chave fixa. A página faz polling somente para leitura e oculta o Pix quando pago ou expirado. A confirmação confiável ocorre exclusivamente em `POST /api/webhooks/payments/stripe/invoices/`, com assinatura Stripe sobre o corpo bruto. O backend confere PaymentIntent, BRL e valor em centavos, marca a fatura e cria uma única receita. O ID único do evento e o vínculo único `Revenue.invoice` tornam reentregas idempotentes.
+O Mercado Pago cria o pagamento Pix dinâmico no backend. QR e Copia e Cola vêm da API e identificam aquela cobrança; não são uma chave fixa. A página faz polling somente para leitura e oculta o Pix quando pago ou expirado. A confirmação confiável ocorre exclusivamente em `POST /api/webhooks/mercado-pago/`, com validação HMAC de `x-signature` e consulta autenticada do pagamento. O backend confere referência externa, BRL e valor, marca a fatura e cria uma única receita. A chave determinística do evento e o vínculo único `Revenue.invoice` tornam reentregas idempotentes.
 
 O painel permite copiar/abrir o link e gerar novo Pix após expiração. Nenhuma API paga de WhatsApp foi adicionada; o link pode ser enviado manualmente por email ou WhatsApp.
 
@@ -209,7 +209,7 @@ toast compartilhado; nenhum fluxo novo usa `alert()`.
 
 ## Entrega de cobranças
 
-Ao escolher **Gerar cobrança Pix agora**, o backend reutiliza a integração Stripe,
+Ao escolher **Gerar cobrança Pix agora**, o backend reutiliza a integração Mercado Pago,
 gera um pagamento real e abre imediatamente a página pública com cliente, valor,
 descrição, vencimento, status, QR Code e Pix Copia e Cola. Nenhum QR ou código é
 fabricado localmente. Depois da geração, uma tarefa Celery envia os dados e o link
@@ -227,9 +227,9 @@ registra que o canal foi ignorado e não informa ao usuário que houve envio.
 
 O plano Free permite 3 projetos ativos, 2 membros e 500 MB. O Pro custa R$ 25,00/mês, permite projetos ilimitados, 20 membros, 10 GB, portal do cliente e recursos avançados. Os limites ficam centralizados em `SubscriptionPolicy`; downgrade nunca exclui dados.
 
-Billing usa Stripe Checkout em modo `subscription`. O backend usa exclusivamente o plano Pro de R$ 25 cadastrado e o `STRIPE_PRO_PRICE_ID`; o frontend não informa valor. A assinatura só muda mediante webhook Stripe assinado e idempotente. Eventos tratados: `checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.updated` e `customer.subscription.deleted`.
+Billing usa a API de assinaturas recorrentes do Mercado Pago. O backend define exclusivamente o plano Pro de R$ 25; o frontend não informa valor. A assinatura só muda mediante webhook assinado e idempotente, após consulta autenticada de preapproval ou pagamento autorizado.
 
-Para ativar checkout sandbox, configure `PAYMENT_PROVIDER=stripe`, `PAYMENT_API_KEY`, `PAYMENT_WEBHOOK_SECRET` e `STRIPE_PRO_PRICE_ID`. Para cobranças Pix, configure `PIX_WEBHOOK_SECRET` com o segredo exclusivo do endpoint de faturas e `PIX_EXPIRATION_SECONDS` (10 a 1.209.600 segundos). Credenciais ficam somente no backend e `.env.example` contém placeholders. Use Stripe CLI/chaves de teste: assinatura SaaS aponta para `/api/webhooks/payments/stripe/`; Pix de clientes, para `/api/webhooks/payments/stripe/invoices/`. Os testes usam mocks e nunca cobram dinheiro real.
+Para ativar o ambiente de teste, configure `MERCADO_PAGO_ENVIRONMENT=test`, `MERCADO_PAGO_ACCESS_TOKEN`, `MERCADO_PAGO_WEBHOOK_SECRET` e `MERCADO_PAGO_BASE_URL`. `MERCADO_PAGO_PUBLIC_KEY` só é necessária para recursos client-side futuros; o Access Token permanece exclusivamente no backend. Configure no painel do Mercado Pago o endpoint HTTPS `/api/webhooks/mercado-pago/` para pagamentos e assinaturas. Os testes usam mocks e nunca movimentam dinheiro real.
 
 Serviços locais:
 
@@ -238,7 +238,7 @@ docker compose up --build
 docker compose logs -f celery_worker
 ```
 
-Para validar o fluxo do zero: configure chaves Stripe de teste, suba banco, Redis, backend, worker, beat e frontend; crie cliente/projeto e uma cobrança; copie o link e abra em janela anônima. Ele deve abrir sem login e manter valor, QR e código somente para leitura. Envie um evento sandbox assinado e confirme a mudança para pago. Execute `docker compose run --rm backend python manage.py check`, `docker compose run --rm backend python manage.py test`, `cd frontend`, `npm test`, `npm run lint` e `npm run build`.
+Para validar o fluxo do zero: configure credenciais Mercado Pago de teste, suba banco, Redis, backend, worker, beat e frontend; crie cliente/projeto e uma cobrança; copie o link e abra em janela anônima. Ele deve abrir sem login e manter valor, QR e código somente para leitura. Envie um evento sandbox assinado e confirme a mudança para pago. Execute `docker compose run --rm backend python manage.py check`, `docker compose run --rm backend python manage.py test`, `cd frontend`, `npm test`, `npm run lint` e `npm run build`.
 
 ## Demonstração local
 
@@ -258,7 +258,7 @@ Credenciais exclusivamente locais: `demo@devflow.local` / `DevFlowDemo!2026`.
 - Arquitetura: consulte `docs/ARCHITECTURE.md`.
 - Segurança: consulte `SECURITY.md`.
 
-O deploy público não é executado automaticamente: domínio, VPS, DNS, certificados, conta Stripe sandbox/produção e credenciais SMTP continuam sendo decisões externas do proprietário.
+O deploy público não é executado automaticamente: domínio, VPS, DNS, certificados, conta Mercado Pago de teste/produção e credenciais SMTP continuam sendo decisões externas do proprietário.
 
 ## Autor
 

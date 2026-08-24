@@ -45,8 +45,8 @@ export function HelpPage() {
     ['Como criar um projeto?', 'Acesse Projetos e escolha Novo projeto. Todo projeto precisa de um cliente.'],
     ['Como criar tarefas?', 'Abra um projeto, entre no Kanban e adicione a tarefa.'],
     ['Como adicionar alguém à equipe?', 'O Primário acessa Equipe e envia um convite para Admin ou Membro.'],
-    ['Como criar uma cobrança?', 'Em Financeiro, abra Cobranças e escolha Nova cobrança. O Pix usa o Stripe configurado.'],
-    ['Como funciona o Pix?', 'O backend solicita um Pix real ao Stripe e fornece uma página pública com QR Code e Copia e Cola.'],
+    ['Como criar uma cobrança?', 'Em Financeiro, abra Cobranças e escolha Nova cobrança. O Pix usa o Mercado Pago configurado.'],
+    ['Como funciona o Pix?', 'O backend solicita um Pix real ao Mercado Pago e fornece uma página pública com QR Code e Copia e Cola.'],
     ['Como alterar meu perfil?', 'Clique no avatar ou acesse Configurações > Perfil.'],
     ['Qual a diferença entre Primário e Secundário?', 'Primário é o Owner responsável pelo workspace. Admins e membros são Secundários e não podem se promover.'],
   ];

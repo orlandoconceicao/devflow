@@ -23,41 +23,38 @@ Este documento reúne somente informações que dependem do proprietário do Dev
 - [ ] Política de reembolso: `PENDENTE — definir`
 - [ ] Texto que aparecerá na cobrança/fatura: `PENDENTE`
 
-## 3. Stripe
+## 3. Mercado Pago
 
-O backend já possui integração com Stripe para checkout, portal de cobrança, assinatura e validação de webhook.
+O backend centraliza no Mercado Pago as assinaturas, cobranças Pix e validação de webhook.
 
 ### Decisões necessárias
 
 - [ ] Tipo de cobrança: **assinatura recorrente mensal** ou pagamento avulso.
 - [ ] Ambiente inicial: **teste/sandbox** ou produção.
-- [ ] O produto **DevFlow Pro** já foi criado no Stripe? `SIM/NÃO`
-- [ ] O preço recorrente mensal de **R$ 25,00** já foi criado? `SIM/NÃO`
-- [ ] Price ID do preço recorrente, normalmente iniciado por `price_`: `PENDENTE`
-- [ ] URL para retornar após pagamento aprovado: `PENDENTE — depende do domínio`
-- [ ] URL para retornar após pagamento recusado/cancelado: `PENDENTE`
+- [ ] A aplicação DevFlow já foi criada no Mercado Pago? `SIM/NÃO`
+- [ ] A conta está habilitada para Pix e assinaturas recorrentes? `SIM/NÃO`
+- [ ] URL para retornar após a autorização: `PENDENTE — depende do domínio`
 - [ ] URL pública do webhook: `PENDENTE — depende da API em produção`
 
 ### Credenciais necessárias
 
-Obtenha no **Stripe Dashboard → Developers**:
+Obtenha no painel de desenvolvedores do Mercado Pago:
 
-- [ ] Chave publicável de teste, iniciada por `pk_test_`.
-- [ ] Chave secreta de teste, iniciada por `sk_test_`.
-- [ ] Segredo do webhook de teste, iniciado por `whsec_`.
-- [ ] Price ID de teste do DevFlow Pro, iniciado por `price_`.
-- [ ] Chave publicável de produção, iniciada por `pk_live_`.
-- [ ] Chave secreta de produção, iniciada por `sk_live_`.
-- [ ] Segredo do webhook de produção, iniciado por `whsec_`.
-- [ ] Price ID de produção do DevFlow Pro.
+- [ ] Public Key de teste.
+- [ ] Access Token de teste.
+- [ ] Segredo do webhook de teste.
+- [ ] Public Key de produção.
+- [ ] Access Token de produção.
+- [ ] Segredo do webhook de produção.
 
 Esses valores devem ser colocados somente no `.env` local ou no gerenciador de segredos do servidor:
 
 ```env
-PAYMENT_PROVIDER=stripe
-PAYMENT_API_KEY=
-PAYMENT_WEBHOOK_SECRET=
-STRIPE_PRO_PRICE_ID=
+MERCADO_PAGO_ENVIRONMENT=test
+MERCADO_PAGO_PUBLIC_KEY=
+MERCADO_PAGO_ACCESS_TOKEN=
+MERCADO_PAGO_WEBHOOK_SECRET=
+MERCADO_PAGO_BASE_URL=https://api.mercadopago.com
 ```
 
 Não enviar chave secreta ou segredo do webhook por captura de tela, documento público ou commit no GitHub.
@@ -67,15 +64,14 @@ Não enviar chave secreta ou segredo do webhook por captura de tela, documento p
 Quando a integração estiver implementada e a API tiver endereço público HTTPS, o endereço previsto será semelhante a:
 
 ```text
-https://api.seudominio.com/api/webhooks/payments/stripe/
+https://api.seudominio.com/api/webhooks/mercado-pago/
 ```
 
 Eventos necessários:
 
-- `checkout.session.completed`;
-- atualizações relevantes de assinatura;
-- cancelamento da assinatura;
-- falha ou atualização de pagamento, conforme habilitado no backend.
+- pagamentos;
+- atualizações de assinatura (`subscription_preapproval`);
+- pagamentos recorrentes (`subscription_authorized_payment`).
 
 ## 4. Domínio e deploy
 
@@ -116,7 +112,7 @@ Não reutilize a senha do banco local em produção.
 Para desenvolver e testar primeiro no ambiente local:
 
 1. Confirmar que deseja **assinatura recorrente mensal de R$ 25,00**.
-2. Informar se a conta Stripe está criada e ativada.
+2. Informar se a conta Mercado Pago está criada e habilitada para Pix e assinaturas.
 3. Criar o produto **DevFlow Pro** no modo de teste.
 4. Criar o preço recorrente mensal de R$ 25,00 e informar apenas o `price_...`.
 5. Configurar as credenciais de **teste** diretamente no `.env`; não colá-las neste arquivo.

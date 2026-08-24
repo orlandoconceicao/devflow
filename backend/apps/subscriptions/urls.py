@@ -4,13 +4,11 @@ from .views import (
     PlanListView,
     SubscriptionView,
     billing_payments,
-    billing_portal,
     billing_subscription,
     billing_usage,
     cancel,
     checkout,
-    payment_webhook,
-    reactivate,
+    mercado_pago_webhook,
 )
 
 urlpatterns = [
@@ -20,8 +18,6 @@ urlpatterns = [
     path("billing/usage/", billing_usage),
     path("billing/payments/", billing_payments),
     path("billing/checkout/", checkout),
-    path("billing/portal/", billing_portal),
     path("billing/cancel/", cancel),
-    path("billing/reactivate/", reactivate),
-    path("webhooks/payments/<str:provider>/", payment_webhook),
+    path("webhooks/mercado-pago/", mercado_pago_webhook),
 ]

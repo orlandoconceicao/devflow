@@ -6,5 +6,5 @@
 - Clientes, projetos, tarefas, Kanban, comentários e anexos.
 - Horas, financeiro, faturas, relatórios e exportações.
 - Portal do cliente, entregas, notificações, Celery e WebSockets.
-- Assinatura Free/Pro e integração Stripe baseada em webhook.
+- Assinatura Free/Pro e integração Mercado Pago baseada em webhook.
 - Hardening, health checks, seed demo, CI/CD e preparação de produção.

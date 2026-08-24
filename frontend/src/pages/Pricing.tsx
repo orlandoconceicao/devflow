@@ -8,7 +8,7 @@ export function PricingPage() {
       const { data } = await api.post<{ url: string }>('/billing/checkout/');
       location.assign(data.url);
     } catch {
-      toast('Configure o Stripe em modo de teste para iniciar o checkout.', 'warning');
+      toast('Configure o Mercado Pago em modo de teste para iniciar a assinatura.', 'warning');
     }
   };
   return (

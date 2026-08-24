@@ -316,7 +316,7 @@ function ChargeForm({ onClose, initialClient }: { onClose: () => void; initialCl
             </label>
             {(create.error || generate.error) && (
               <small>
-                Não foi possível criar a cobrança. Confira os dados e a configuração do Stripe.
+                Não foi possível criar a cobrança. Confira os dados e a configuração do Mercado Pago.
               </small>
             )}
             <footer>

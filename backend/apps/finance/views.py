@@ -13,7 +13,7 @@ from apps.organizations.models import OrganizationMembership
 from apps.work.context import current_membership
 
 from .models import Expense, Invoice, InvoicePayment, MemberRate, Revenue, TimeEntry
-from .payments import PaymentProviderError, generate_pix, get_pix_provider, process_stripe_event
+from .payments import PaymentProviderError, generate_pix
 from .serializers import (
     ExpenseSerializer,
     InvoiceSerializer,
@@ -27,10 +27,7 @@ from .serializers import (
 
 class FinancePermission(BasePermission):
     def has_permission(self, request, view):
-        return current_membership(request).role in (
-            OrganizationMembership.Role.OWNER,
-            OrganizationMembership.Role.ADMIN,
-        )
+        return current_membership(request).role == OrganizationMembership.Role.OWNER
 
 
 class WorkspaceStaffPermission(BasePermission):
@@ -205,21 +202,6 @@ def public_payment(request, token):
         payment.status = InvoicePayment.Status.EXPIRED
         payment.save(update_fields=["status", "updated_at"])
     return Response(PublicPaymentSerializer(payment).data)
-
-
-@api_view(["POST"])
-@permission_classes([AllowAny])
-def stripe_invoice_webhook(request):
-    try:
-        event = get_pix_provider().parse_webhook(
-            request.body, request.headers.get("Stripe-Signature", "")
-        )
-        result = process_stripe_event(event)
-    except PaymentProviderError as exc:
-        return Response({"detail": str(exc)}, status=400)
-    except Exception:
-        return Response({"detail": "Assinatura ou payload inválido."}, status=400)
-    return Response({"received": True, "result": result})
 
 
 @api_view(["GET"])

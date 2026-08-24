@@ -2,7 +2,7 @@
 
 ## Versão curta
 
-Desenvolvi o DevFlow, uma plataforma SaaS multi-tenant para gestão de clientes, projetos, tarefas, horas e faturamento, usando Django REST Framework, React/TypeScript, PostgreSQL, Redis, Celery, WebSockets, RBAC, Stripe e Docker.
+Desenvolvi o DevFlow, uma plataforma SaaS multi-tenant para gestão de clientes, projetos, tarefas, horas e faturamento, usando Django REST Framework, React/TypeScript, PostgreSQL, Redis, Celery, WebSockets, RBAC, Mercado Pago e Docker.
 
 ## Versão detalhada
 

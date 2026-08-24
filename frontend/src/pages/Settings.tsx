@@ -115,11 +115,9 @@ export function BillingPage() {
         {pro ? (
           <Button
             className="secondary"
-            onClick={() =>
-              post(data.cancel_at_period_end ? '/billing/reactivate/' : '/billing/cancel/')
-            }
+            onClick={() => post('/billing/cancel/')}
           >
-            {data.cancel_at_period_end ? 'Reativar' : 'Cancelar no fim do período'}
+            Cancelar assinatura
           </Button>
         ) : (
           <Button onClick={checkout}>Assinar Pro — R$ 25/mês</Button>
@@ -137,7 +135,6 @@ export function BillingPage() {
         {data?.current_period_end && (
           <p>
             Acesso até {new Date(data.current_period_end).toLocaleDateString('pt-BR')}
-            {data.cancel_at_period_end ? ' — cancelamento agendado' : ''}
           </p>
         )}
       </section>

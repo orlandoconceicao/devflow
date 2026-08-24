@@ -18,7 +18,7 @@ Copy-Item .env.example .env
 docker compose up --build
 ```
 
-Não é necessário domínio, banco de produção, deploy, Stripe, SMTP real ou dados bancários para os Prompts 1 a 4.
+Não é necessário domínio, banco de produção, deploy, Mercado Pago, SMTP real ou dados bancários para os Prompts 1 a 4.
 
 ## Backend local com Redis
 
@@ -44,7 +44,7 @@ automaticamente `redis://redis:6379/0` ao backend e aos processos Celery.
 
 ## Ainda necessário nos próximos prompts
 
-- Prompt 5: Redis, Celery, notificações, portal e emails no console funcionam localmente. Checkout real em sandbox exige uma conta Stripe de teste, `PAYMENT_API_KEY`, `PAYMENT_WEBHOOK_SECRET` e `STRIPE_PRO_PRICE_ID`.
+- Prompt 5: Redis, Celery, notificações, portal e emails no console funcionam localmente. Pagamentos reais no ambiente de teste exigem uma conta Mercado Pago, `MERCADO_PAGO_ACCESS_TOKEN` e `MERCADO_PAGO_WEBHOOK_SECRET`.
 - Prompt 6: domínio, URLs públicas, servidor, PostgreSQL de produção, backup e secrets apenas para deploy real.
 
 Nunca coloque senhas, tokens, chave PIX, documentos ou chave SSH privada em arquivos versionados.
