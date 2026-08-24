@@ -1,9 +1,12 @@
 import hashlib
 from datetime import timedelta
 
+from channels.testing import WebsocketCommunicator
 from django.core.management import call_command
+from django.test import TransactionTestCase
 from django.utils import timezone
 from rest_framework.test import APITestCase
+from rest_framework_simplejwt.tokens import AccessToken
 
 from apps.accounts.models import User
 from apps.organizations.models import OrganizationMembership
@@ -13,6 +16,26 @@ from apps.portal.models import (
     Notification,
     ProjectDeliverable,
 )
+from config.asgi import application
+
+
+class NotificationWebsocketTests(TransactionTestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email="socket@test.local", password="StrongPass!2026"
+        )
+
+    async def test_valid_jwt_connects_and_invalid_jwt_is_rejected(self):
+        token = str(AccessToken.for_user(self.user))
+        valid = WebsocketCommunicator(application, f"/ws/notifications/?token={token}")
+        connected, _ = await valid.connect()
+        self.assertTrue(connected)
+        await valid.disconnect()
+
+        invalid = WebsocketCommunicator(application, "/ws/notifications/?token=invalid")
+        connected, close_code = await invalid.connect()
+        self.assertFalse(connected)
+        self.assertEqual(close_code, 4401)
 
 
 class PortalBillingTests(APITestCase):
@@ -107,6 +130,20 @@ class PortalBillingTests(APITestCase):
             status="READY_FOR_REVIEW",
             created_by=owner,
         )
+        dashboard = self.client.get("/api/client-portal/dashboard/", **h)
+        self.assertEqual(dashboard.status_code, 200)
+        self.assertEqual(dashboard.data["active_projects"], 1)
+        self.assertEqual(
+            self.client.patch(
+                f"/api/deliverables/{d.id}/",
+                {"title": "Tentativa indevida"},
+                format="json",
+                **h,
+            ).status_code,
+            403,
+        )
+        self.assertEqual(self.client.get("/api/time-entries/", **h).status_code, 403)
+        self.assertEqual(self.client.get("/api/reports/", **h).status_code, 403)
         self.assertEqual(
             self.client.post(
                 f"/api/deliverables/{d.id}/approve/", {}, format="json", **h

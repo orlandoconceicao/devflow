@@ -30,6 +30,11 @@ class FinancePermission(BasePermission):
         )
 
 
+class WorkspaceStaffPermission(BasePermission):
+    def has_permission(self, request, view):
+        return current_membership(request).role != OrganizationMembership.Role.CLIENT
+
+
 class TenantViewSet(viewsets.ModelViewSet):
     def org(self):
         return current_membership(self.request).organization
@@ -68,6 +73,7 @@ class MemberRateViewSet(TenantViewSet):
 class TimeEntryViewSet(TenantViewSet):
     queryset = TimeEntry.objects.select_related("project", "task", "user")
     serializer_class = TimeEntrySerializer
+    permission_classes = [WorkspaceStaffPermission]
 
     def get_queryset(self):
         qs = filtered(super().get_queryset(), self.request, "started_at__date")
@@ -218,6 +224,7 @@ def finance_dashboard(request):
 
 
 @api_view(["GET"])
+@permission_classes([WorkspaceStaffPermission])
 def reports(request):
     org = current_membership(request).organization
     qs = filtered(
@@ -245,6 +252,7 @@ def reports(request):
 
 
 @api_view(["GET"])
+@permission_classes([WorkspaceStaffPermission])
 def export_hours(request):
     org = current_membership(request).organization
     qs = filtered(

@@ -1,11 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { Button, Input } from '../components/ui';
 import { useAuth } from '../features/auth/AuthContext';
-import { getApiErrorDetails } from '../services/api';
+import { api, getApiErrorDetails } from '../services/api';
 const loginSchema = z.object({
   email: z.email('Email inválido'),
   password: z.string().min(1, 'Informe a senha'),
@@ -59,13 +59,19 @@ function AuthShell({
 }
 export function LoginPage() {
   const { login, isAuthenticated } = useAuth();
+  const [params] = useSearchParams();
   const [serverError, setServerError] = useState('');
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<Login>({ resolver: zodResolver(loginSchema) });
-  if (isAuthenticated) return <Navigate to="/dashboard" />;
+  const requestedPath = params.get('next');
+  const destination =
+    requestedPath?.startsWith('/') && !requestedPath.startsWith('//')
+      ? requestedPath
+      : '/dashboard';
+  if (isAuthenticated) return <Navigate to={destination} />;
   return (
     <AuthShell title="Bem-vindo de volta" subtitle="Entre para continuar no seu workspace.">
       <form
@@ -92,6 +98,8 @@ export function LoginPage() {
         <Button disabled={isSubmitting}>{isSubmitting ? 'Entrando…' : 'Entrar'}</Button>
       </form>
       <footer>
+        <Link to="/password-reset">Esqueci minha senha</Link>
+        <br />
         Não tem uma conta? <Link to="/register">Criar conta</Link>
       </footer>
     </AuthShell>
@@ -172,6 +180,126 @@ export function RegisterPage() {
       <footer>
         Já tem uma conta? <Link to="/login">Entrar</Link>
       </footer>
+    </AuthShell>
+  );
+}
+
+export function PasswordResetPage() {
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  return (
+    <AuthShell title="Redefinir senha" subtitle="Enviaremos as instruções para seu email.">
+      <form
+        onSubmit={async (event) => {
+          event.preventDefault();
+          setError('');
+          setSubmitting(true);
+          try {
+            const { data } = await api.post<{ detail: string }>('/auth/password-reset/', {
+              email: email.trim().toLowerCase(),
+            });
+            setMessage(data.detail);
+          } catch (requestError) {
+            setError(
+              getApiErrorDetails(requestError, 'Não foi possível enviar as instruções.').message,
+            );
+          } finally {
+            setSubmitting(false);
+          }
+        }}
+      >
+        <label>
+          Email
+          <Input
+            type="email"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
+        </label>
+        {message && <div>{message}</div>}
+        {error && <div className="form-error">{error}</div>}
+        <Button disabled={submitting}>{submitting ? 'Enviando…' : 'Enviar instruções'}</Button>
+      </form>
+      <footer>
+        <Link to="/login">Voltar ao login</Link>
+      </footer>
+    </AuthShell>
+  );
+}
+
+export function PasswordResetConfirmPage() {
+  const [params] = useSearchParams();
+  const [password, setPassword] = useState('');
+  const [confirmation, setConfirmation] = useState('');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const uid = params.get('uid') ?? '';
+  const token = params.get('token') ?? '';
+  return (
+    <AuthShell title="Criar nova senha" subtitle="Escolha uma senha segura para sua conta.">
+      {!uid || !token ? (
+        <div className="form-error">Link de redefinição inválido.</div>
+      ) : message ? (
+        <>
+          <div>{message}</div>
+          <footer>
+            <Link to="/login">Entrar</Link>
+          </footer>
+        </>
+      ) : (
+        <form
+          onSubmit={async (event) => {
+            event.preventDefault();
+            setError('');
+            if (password !== confirmation) {
+              setError('As senhas não coincidem.');
+              return;
+            }
+            setSubmitting(true);
+            try {
+              const { data } = await api.post<{ detail: string }>('/auth/password-reset/confirm/', {
+                uid,
+                token,
+                password,
+              });
+              setMessage(data.detail);
+            } catch (requestError) {
+              setError(
+                getApiErrorDetails(requestError, 'Não foi possível redefinir a senha.').message,
+              );
+            } finally {
+              setSubmitting(false);
+            }
+          }}
+        >
+          <label>
+            Nova senha
+            <Input
+              type="password"
+              minLength={8}
+              required
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </label>
+          <label>
+            Confirmar senha
+            <Input
+              type="password"
+              minLength={8}
+              required
+              value={confirmation}
+              onChange={(event) => setConfirmation(event.target.value)}
+            />
+          </label>
+          {error && <div className="form-error">{error}</div>}
+          <Button disabled={submitting}>{submitting ? 'Salvando…' : 'Salvar nova senha'}</Button>
+        </form>
+      )}
     </AuthShell>
   );
 }

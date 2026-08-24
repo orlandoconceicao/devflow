@@ -1,8 +1,14 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import type { ReactNode } from 'react';
 import { LoadingState } from './components/ui';
 import { useAuth } from './features/auth/AuthContext';
 import { AppLayout } from './layouts/AppLayout';
-import { LoginPage, RegisterPage } from './pages/AuthPages';
+import {
+  LoginPage,
+  PasswordResetConfirmPage,
+  PasswordResetPage,
+  RegisterPage,
+} from './pages/AuthPages';
 import { Dashboard } from './pages/Dashboard';
 import { PlanPage, WorkspacePage } from './pages/Onboarding';
 import { Placeholder } from './pages/Placeholder';
@@ -14,18 +20,40 @@ import { TimeTracking } from './pages/TimeTracking';
 import { FinancePage } from './pages/Finance';
 import { ReportsPage } from './pages/Reports';
 import { NotificationsPage } from './pages/Notifications';
-import { ClientPortal, ClientProject } from './pages/ClientPortal';
+import { AcceptClientInvitation, ClientPortal, ClientProject } from './pages/ClientPortal';
 import { BillingResult, PricingPage } from './pages/Pricing';
+import { NotFoundPage } from './pages/Errors';
 function Protected() {
   const { isAuthenticated, isLoading } = useAuth();
   if (isLoading) return <LoadingState />;
   return isAuthenticated ? <AppLayout /> : <Navigate to="/login" replace />;
+}
+function ProtectedPage({ children }: { children: ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
+  if (isLoading) return <LoadingState />;
+  const returnTo = `${location.pathname}${location.search}`;
+  return isAuthenticated ? (
+    children
+  ) : (
+    <Navigate to={`/login?next=${encodeURIComponent(returnTo)}`} replace />
+  );
 }
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/password-reset" element={<PasswordResetPage />} />
+      <Route path="/password-reset/confirm" element={<PasswordResetConfirmPage />} />
+      <Route
+        path="/client-invitations/accept"
+        element={
+          <ProtectedPage>
+            <AcceptClientInvitation />
+          </ProtectedPage>
+        }
+      />
       <Route element={<Protected />}>
         <Route path="/onboarding" element={<Navigate to="/onboarding/workspace" />} />
         <Route path="/onboarding/workspace" element={<WorkspacePage />} />
@@ -50,7 +78,7 @@ export default function App() {
         <Route path="/settings/billing" element={<BillingPage />} />
         <Route path="/settings/notifications" element={<NotificationSettings />} />
       </Route>
-      <Route path="*" element={<Navigate to="/dashboard" />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

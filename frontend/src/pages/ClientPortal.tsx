@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
 import { EmptyState, LoadingState } from '../components/ui';
 import { api } from '../services/api';
 import type { Deliverable, PaginatedResponse, PortalDashboard } from '../types';
@@ -7,8 +8,11 @@ export function ClientPortal() {
   const d = useQuery({
     queryKey: ['client-portal'],
     queryFn: () => api.get<PortalDashboard>('/client-portal/dashboard/').then((r) => r.data),
+    retry: false,
   });
   if (d.isLoading) return <LoadingState />;
+  if (d.isError)
+    return <div className="form-error">Não foi possível carregar o portal do cliente.</div>;
   return (
     <>
       <div className="page-head">
@@ -106,5 +110,51 @@ export function ClientProject() {
         <EmptyState title="Nenhuma entrega" />
       )}
     </>
+  );
+}
+
+export function AcceptClientInvitation() {
+  const [params] = useSearchParams();
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const token = params.get('token') ?? '';
+  return (
+    <section className="panel">
+      <h1>Convite para o portal</h1>
+      {!token ? (
+        <div className="form-error">Convite inválido.</div>
+      ) : status === 'success' ? (
+        <>
+          <p>Convite aceito com sucesso.</p>
+          <Link className="button" to="/client">
+            Abrir portal
+          </Link>
+        </>
+      ) : (
+        <>
+          <p>Confirme para acessar os projetos compartilhados com seu email.</p>
+          {status === 'error' && (
+            <div className="form-error">
+              O convite é inválido, expirou ou pertence a outro email.
+            </div>
+          )}
+          <button
+            className="button"
+            disabled={status === 'loading'}
+            onClick={async () => {
+              setStatus('loading');
+              try {
+                await api.post('/client-invitations/accept/', { token });
+                localStorage.removeItem('organization_id');
+                setStatus('success');
+              } catch {
+                setStatus('error');
+              }
+            }}
+          >
+            {status === 'loading' ? 'Aceitando…' : 'Aceitar convite'}
+          </button>
+        </>
+      )}
+    </section>
   );
 }

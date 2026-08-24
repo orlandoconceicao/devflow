@@ -19,7 +19,8 @@ import { useAuth } from '../features/auth/AuthContext';
 import { Avatar, LoadingState } from '../components/ui';
 import { organizationService } from '../services/work';
 import { useNotificationsSocket, useUnreadCount } from '../features/notifications/hooks';
-const links = [
+import type { Role } from '../types';
+const workspaceLinks = [
   ['/dashboard', 'Dashboard', LayoutDashboard],
   ['/projects', 'Projetos', BriefcaseBusiness],
   ['/tasks', 'Tarefas', CheckSquare],
@@ -28,17 +29,27 @@ const links = [
   ['/team', 'Equipe', Users],
   ['/finance', 'Financeiro', WalletCards],
   ['/reports', 'Relatórios', Clock3],
-  ['/client', 'Portal do cliente', BriefcaseBusiness],
 ] as const;
+const clientLinks = [['/client', 'Portal do cliente', BriefcaseBusiness]] as const;
 export function AppLayout() {
   const [open, setOpen] = useState(false);
   const [workspace, setWorkspace] = useState<'loading' | 'present' | 'missing' | 'error'>(
     'loading',
   );
+  const [role, setRole] = useState<Role | null>(null);
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const hasWorkspace = workspace === 'present';
+  const isClientRoute = location.pathname === '/client' || location.pathname.startsWith('/client/');
+  const isClientCommonRoute =
+    location.pathname === '/notifications' ||
+    location.pathname === '/settings/profile' ||
+    location.pathname === '/settings/notifications';
+  const roleRouteMismatch =
+    role !== null &&
+    ((role === 'CLIENT' && !isClientRoute && !isClientCommonRoute) ||
+      (role !== 'CLIENT' && isClientRoute));
   const unread = useUnreadCount(hasWorkspace);
   useNotificationsSocket(hasWorkspace);
   useEffect(() => {
@@ -49,7 +60,13 @@ export function AppLayout() {
       .then((organization) => {
         if (!active) return;
         if (organization) {
+          setRole(organization.role);
           setWorkspace('present');
+          if (organization.role === 'CLIENT' && !isClientRoute && !isClientCommonRoute) {
+            navigate('/client', { replace: true });
+          } else if (organization.role !== 'CLIENT' && isClientRoute) {
+            navigate('/dashboard', { replace: true });
+          }
           return;
         }
         localStorage.removeItem('organization_id');
@@ -75,7 +92,7 @@ export function AppLayout() {
           <i>⌁</i>DevFlow
         </div>
         <nav>
-          {links.map(([to, label, Icon]) => (
+          {(role === 'CLIENT' ? clientLinks : workspaceLinks).map(([to, label, Icon]) => (
             <NavLink key={to} to={to} onClick={() => setOpen(false)}>
               <Icon size={18} />
               {label}
@@ -118,7 +135,7 @@ export function AppLayout() {
           <Avatar name={user?.first_name || 'U'} url={user?.avatar} />
         </header>
         <div className="content">
-          {workspace === 'loading' ? (
+          {workspace === 'loading' || roleRouteMismatch ? (
             <LoadingState />
           ) : workspace === 'error' ? (
             <div className="form-error">Não foi possível carregar o workspace.</div>

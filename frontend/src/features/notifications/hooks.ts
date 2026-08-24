@@ -47,7 +47,11 @@ export function useNotificationsSocket(enabled = true) {
     return () => {
       closed = true;
       clearTimeout(timer);
-      ws?.close();
+      if (ws?.readyState === WebSocket.OPEN) {
+        ws.close();
+      } else if (ws?.readyState === WebSocket.CONNECTING) {
+        ws.addEventListener('open', () => ws?.close(), { once: true });
+      }
     };
   }, [enabled, q]);
 }

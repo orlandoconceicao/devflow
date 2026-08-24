@@ -4,7 +4,7 @@ from pathlib import Path
 
 from django.db import transaction
 from django.utils import timezone
-from rest_framework import generics, viewsets
+from rest_framework import generics, permissions, viewsets
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 
@@ -44,6 +44,13 @@ def client_projects(request):
         organization=current_membership(request).organization,
         client__portal_accesses__user=request.user,
     ).distinct()
+
+
+class DeliverablePermission(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if view.action in ("create", "update", "partial_update", "destroy"):
+            return is_manager(request)
+        return True
 
 
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
@@ -88,6 +95,7 @@ class NotificationPreferenceView(generics.RetrieveUpdateAPIView):
 
 class DeliverableViewSet(viewsets.ModelViewSet):
     serializer_class = DeliverableSerializer
+    permission_classes = [permissions.IsAuthenticated, DeliverablePermission]
 
     def get_queryset(self):
         m = current_membership(self.request)
