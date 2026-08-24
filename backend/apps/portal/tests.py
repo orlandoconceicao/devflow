@@ -2,6 +2,7 @@ import hashlib
 from datetime import timedelta
 
 from channels.testing import WebsocketCommunicator
+from config.asgi import application
 from django.core.management import call_command
 from django.test import TransactionTestCase
 from django.utils import timezone
@@ -16,7 +17,6 @@ from apps.portal.models import (
     Notification,
     ProjectDeliverable,
 )
-from config.asgi import application
 
 
 class NotificationWebsocketTests(TransactionTestCase):

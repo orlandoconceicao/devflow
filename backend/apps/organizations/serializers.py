@@ -1,11 +1,10 @@
-from rest_framework import serializers
-
-from apps.accounts.serializers import UserSerializer
-
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.db import transaction
 from django.utils import timezone
+from rest_framework import serializers
+
+from apps.accounts.serializers import UserSerializer
 
 from .models import Organization, OrganizationMembership, TeamInvitation, TeamMessage
 from .services import create_organization

@@ -3,7 +3,15 @@ from rest_framework import serializers
 
 from apps.work.context import current_membership
 
-from .models import Expense, Invoice, InvoiceItem, InvoicePayment, MemberRate, Revenue, TimeEntry
+from .models import (
+    Expense,
+    Invoice,
+    InvoiceItem,
+    InvoicePayment,
+    MemberRate,
+    Revenue,
+    TimeEntry,
+)
 
 
 class TenantSerializer(serializers.ModelSerializer):

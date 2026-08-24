@@ -10,6 +10,9 @@ exclude = "(frontend|node_modules|dist|media|staticfiles)"
 [tool.ruff.lint]
 select = ["E9", "F63", "F7", "F82", "I"]
 
+[tool.ruff.lint.per-file-ignores]
+"backend/**/migrations/*.py" = ["I001"]
+
 [tool.coverage.run]
 source = ["backend/apps"]
 omit = ["*/migrations/*", "*/tests.py", "*/admin.py"]

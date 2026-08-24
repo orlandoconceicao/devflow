@@ -1,7 +1,6 @@
+from apps.core.views import health, ready
 from django.contrib import admin
 from django.urls import include, path
-
-from apps.core.views import health, ready
 
 urlpatterns = [
     path("health/", health),

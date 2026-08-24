@@ -9,8 +9,8 @@ from .views import (
     TimeEntryViewSet,
     export_hours,
     finance_dashboard,
-    reports,
     public_payment,
+    reports,
 )
 
 router = DefaultRouter()

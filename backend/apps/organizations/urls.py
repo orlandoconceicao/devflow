@@ -3,8 +3,8 @@ from django.urls import path
 from .views import (
     OrganizationDetailView,
     OrganizationListCreateView,
-    OrganizationMembersView,
     OrganizationMemberDetailView,
+    OrganizationMembersView,
     TeamInvitationAcceptView,
     TeamInvitationCreateView,
     TeamInvitationDetailView,
