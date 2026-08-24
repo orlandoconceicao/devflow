@@ -45,12 +45,15 @@ function ProtectedPage({ children }: { children: ReactNode }) {
 export default function App() {
   return (
     <Routes>
+      <Route path="/" element={<Navigate to="/login" replace />} />
+
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/password-reset" element={<PasswordResetPage />} />
       <Route path="/password-reset/confirm" element={<PasswordResetConfirmPage />} />
       <Route path="/pagar/:token" element={<PublicPaymentPage />} />
       <Route path="/team-invitations/accept" element={<TeamInvitationPage />} />
+
       <Route
         path="/client-invitations/accept"
         element={
@@ -59,6 +62,7 @@ export default function App() {
           </ProtectedPage>
         }
       />
+
       <Route element={<Protected />}>
         <Route path="/onboarding" element={<Navigate to="/onboarding/workspace" />} />
         <Route path="/onboarding/workspace" element={<WorkspacePage />} />
@@ -87,6 +91,7 @@ export default function App() {
         <Route path="/settings/notifications" element={<NotificationSettings />} />
         <Route path="/help" element={<HelpPage />} />
       </Route>
+
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
