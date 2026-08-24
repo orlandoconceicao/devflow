@@ -310,62 +310,151 @@ label small {
   color: #16a34a;
 }
 .auth-page {
+  --auth-bg-deep: #0b1120;
+  --auth-bg: #0f172a;
+  --auth-surface: #111c30;
+  --auth-input: #0d1729;
+  --auth-border: rgba(226, 232, 240, 0.1);
+  --auth-border-hover: rgba(148, 163, 184, 0.28);
+  --auth-text: #f1f5f9;
+  --auth-text-muted: #94a3b8;
+  --auth-text-subtle: #64748b;
+  --auth-blue: #3b82f6;
+  --auth-blue-hover: #2563eb;
   min-height: 100vh;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  background: #fff;
+  color: var(--auth-text);
+  background: linear-gradient(145deg, #101a2d 0%, var(--auth-bg-deep) 100%);
 }
 .auth-brand {
-  background: #111827;
-  color: #fff;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(59, 130, 246, 0.1), transparent 34%),
+    linear-gradient(145deg, #111c30 0%, #0b1324 58%, #0b1120 100%);
+  color: var(--auth-text);
   padding: 60px 10%;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  border-right: 1px solid rgba(226, 232, 240, 0.06);
 }
 .auth-brand .logo {
   position: absolute;
   top: 40px;
+  color: #e2e8f0;
+}
+.auth-brand .logo i {
+  background: #315f9f;
+  box-shadow: 0 5px 16px rgba(15, 23, 42, 0.28);
 }
 .auth-brand h1 {
   font-size: 48px;
   line-height: 1.1;
   margin: 0 0 20px;
+  color: #f1f5f9;
+  letter-spacing: -0.025em;
 }
 .auth-brand p {
-  color: #9ca3af;
+  color: var(--auth-text-muted);
   max-width: 430px;
   font-size: 18px;
+  line-height: 1.65;
 }
 .auth-card {
   width: min(420px, 85%);
   margin: auto;
+  padding: 34px;
+  background: rgba(17, 28, 48, 0.82);
+  border: 1px solid var(--auth-border);
+  border-radius: 18px;
+  box-shadow: 0 22px 55px rgba(2, 6, 23, 0.28);
+  backdrop-filter: blur(12px);
 }
 .auth-card h2 {
   font-size: 30px;
-  margin-bottom: 8px;
+  margin: 0 0 8px;
+  color: var(--auth-text);
+  letter-spacing: -0.02em;
 }
 .auth-card > p {
-  color: #6b7280;
+  color: var(--auth-text-muted);
   margin-bottom: 28px;
 }
 .auth-card form {
   display: grid;
   gap: 18px;
 }
+.auth-card label {
+  color: #cbd5e1;
+}
+.auth-card .input {
+  color: #e2e8f0;
+  background: var(--auth-input);
+  border-color: var(--auth-border);
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+.auth-card .input::placeholder {
+  color: var(--auth-text-subtle);
+}
+.auth-card .input:hover {
+  border-color: var(--auth-border-hover);
+}
+.auth-card .input:focus {
+  background: #0f1b30;
+  border-color: rgba(59, 130, 246, 0.72);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
 .auth-card form > .button {
   width: 100%;
   margin-top: 4px;
+  background: var(--auth-blue);
+  color: #f8fafc;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.22);
+  transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+.auth-card form > .button:hover:not(:disabled) {
+  background: var(--auth-blue-hover);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.3);
+  transform: translateY(-1px);
+}
+.auth-card form > .button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.24);
 }
 .auth-card footer {
   text-align: center;
   margin-top: 25px;
-  color: #6b7280;
+  color: var(--auth-text-muted);
+  line-height: 1.8;
 }
 .auth-card a {
-  color: #4f46e5;
+  color: #60a5fa;
   font-weight: 600;
   text-decoration: none;
+  transition: color 160ms ease;
+}
+.auth-card a:hover {
+  color: #93c5fd;
+}
+.auth-card label small {
+  color: #f0a5a5;
+  font-weight: 500;
+}
+.auth-card .form-error {
+  color: #fecaca;
+  background: rgba(185, 28, 28, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.22);
+  border-radius: 9px;
+  padding: 10px 12px;
+}
+.auth-card .success {
+  color: #bbf7d0;
+  background: rgba(22, 163, 74, 0.1);
+  border: 1px solid rgba(74, 222, 128, 0.18);
+  border-radius: 9px;
+  padding: 10px 12px;
 }
 .form-row {
   display: grid;
@@ -618,10 +707,14 @@ label small {
     grid-template-columns: 1fr;
   }
   .auth-card {
-    padding: 30px 0;
+    width: min(100%, 440px);
+    padding: 28px 24px;
   }
   .auth-card h2 {
     font-size: 26px;
+  }
+  .auth-page {
+    padding: 20px 16px;
   }
 }
 .toast-region { position:fixed; right:20px; bottom:20px; z-index:100; display:grid; gap:10px; width:min(360px,calc(100vw - 32px)); }
