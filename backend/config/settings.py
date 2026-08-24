@@ -2,6 +2,7 @@ import sys
 from datetime import timedelta
 from pathlib import Path
 
+import dj_database_url
 from decouple import Csv, config
 from django.core.exceptions import ImproperlyConfigured
 
@@ -61,15 +62,14 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": config("DB_NAME", default="devflow"),
-        "USER": config("DB_USER", default="devflow"),
-        "PASSWORD": config("DB_PASSWORD", default=""),
-        "HOST": config("DB_HOST", default="localhost"),
-        "PORT": config("DB_PORT", default="5432"),
-        "CONN_MAX_AGE": 60,
-    }
+    "default": dj_database_url.config(
+        default=config(
+            "DATABASE_URL",
+            default="postgresql://devflow:@localhost:5432/devflow",
+        ),
+        conn_max_age=60,
+        conn_health_checks=True,
+    )
 }
 AUTH_PASSWORD_VALIDATORS = [
     {
