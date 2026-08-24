@@ -126,7 +126,7 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
 }
-REDIS_URL = config("REDIS_URL", default="redis://redis:6379/0")
+REDIS_URL = config("REDIS_URL", default="redis://localhost:6379/0")
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
