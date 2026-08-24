@@ -201,6 +201,26 @@ export interface FinanceDashboard {
   hours: number;
   by_project: { project__name: string; seconds: number }[];
 }
+export interface Expense {
+  id: number;
+  project: number | null;
+  description: string;
+  amount: string;
+  category: 'SOFTWARE' | 'PEOPLE' | 'TAX' | 'MARKETING' | 'OTHER';
+  occurred_on: string;
+  created_by: number;
+  created_at: string;
+}
+export interface Revenue {
+  id: number;
+  project: number | null;
+  client: number | null;
+  description: string;
+  amount: string;
+  occurred_on: string;
+  created_by: number;
+  created_at: string;
+}
 export interface Invoice {
   id: number;
   client: number;

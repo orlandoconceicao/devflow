@@ -6,6 +6,7 @@ import {
   useInvoices,
   useRevenues,
 } from '../features/finance/hooks';
+import type { Expense, Revenue } from '../types';
 const money = (v: string | number) =>
   Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 export function FinancePage() {
@@ -126,7 +127,7 @@ export function FinancePage() {
     </>
   );
 }
-function DataTable({ rows, kind }: { rows: any[]; kind: string }) {
+function DataTable({ rows, kind }: { rows: Array<Expense | Revenue>; kind: string }) {
   return (
     <section className="panel">
       <div className="panel-head">
