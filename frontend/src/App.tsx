@@ -11,7 +11,6 @@ import {
 } from './pages/AuthPages';
 import { Dashboard } from './pages/Dashboard';
 import { PlanPage, WorkspacePage } from './pages/Onboarding';
-import { Placeholder } from './pages/Placeholder';
 import { BillingPage, NotificationSettings, ProfilePage } from './pages/Settings';
 import { ClientDetail, ClientsPage } from './pages/Clients';
 import { ProjectDetail, ProjectsPage } from './pages/Projects';
@@ -23,6 +22,9 @@ import { NotificationsPage } from './pages/Notifications';
 import { AcceptClientInvitation, ClientPortal, ClientProject } from './pages/ClientPortal';
 import { BillingResult, PricingPage } from './pages/Pricing';
 import { NotFoundPage } from './pages/Errors';
+import { PublicPaymentPage } from './pages/PublicPayment';
+import { TeamPage } from './pages/Team';
+import { TeamInvitationPage } from './pages/TeamInvitation';
 function Protected() {
   const { isAuthenticated, isLoading } = useAuth();
   if (isLoading) return <LoadingState />;
@@ -46,6 +48,8 @@ export default function App() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/password-reset" element={<PasswordResetPage />} />
       <Route path="/password-reset/confirm" element={<PasswordResetConfirmPage />} />
+      <Route path="/pagar/:token" element={<PublicPaymentPage />} />
+      <Route path="/team-invitations/accept" element={<TeamInvitationPage />} />
       <Route
         path="/client-invitations/accept"
         element={
@@ -67,10 +71,10 @@ export default function App() {
         <Route path="/time" element={<TimeTracking />} />
         <Route path="/finance" element={<FinancePage />} />
         <Route path="/reports" element={<ReportsPage />} />
-        <Route path="/team" element={<Placeholder title="Equipe" />} />
+        <Route path="/team" element={<TeamPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
-        <Route path="/client" element={<ClientPortal />} />
-        <Route path="/client/projects/:id" element={<ClientProject />} />
+        <Route path="/client-portal" element={<ClientPortal />} />
+        <Route path="/client-portal/projects/:id" element={<ClientProject />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/billing/success" element={<BillingResult />} />
         <Route path="/billing/cancel" element={<BillingResult cancel />} />

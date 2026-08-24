@@ -17,6 +17,7 @@ export interface OrganizationMembership {
   id: number;
   user: User;
   role: Role;
+  is_active: boolean;
   joined_at: string;
 }
 export interface Plan {
@@ -229,7 +230,25 @@ export interface Invoice {
   status: 'DRAFT' | 'SENT' | 'PAID' | 'CANCELLED';
   issued_on: string;
   due_on: string;
+  payment_release_on: string | null;
+  auto_generate_payment: boolean;
   total: string;
+  payment: AdminPayment | null;
+}
+export type PaymentStatus = 'PENDING' | 'PAID' | 'EXPIRED' | 'CANCELLED' | 'FAILED';
+export interface AdminPayment {
+  status: PaymentStatus;
+  expires_at: string;
+  public_url: string;
+}
+export interface PublicPayment {
+  description: string;
+  amount: string;
+  due_date: string;
+  status: PaymentStatus;
+  pix_code: string;
+  qr_code: string;
+  expires_at: string;
 }
 export interface ReportData {
   group: string;

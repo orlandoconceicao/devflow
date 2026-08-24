@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 from apps.work.context import current_membership
 
-from .models import Expense, Invoice, InvoiceItem, MemberRate, Revenue, TimeEntry
+from .models import Expense, Invoice, InvoiceItem, InvoicePayment, MemberRate, Revenue, TimeEntry
 
 
 class TenantSerializer(serializers.ModelSerializer):
@@ -143,10 +143,21 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("total",)
 
+    def validate_quantity(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("A quantidade deve ser maior que zero.")
+        return value
+
+    def validate_unit_price(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("O valor deve ser maior que zero.")
+        return value
+
 
 class InvoiceSerializer(TenantSerializer):
     items = InvoiceItemSerializer(many=True)
     client_name = serializers.CharField(source="client.name", read_only=True)
+    payment = serializers.SerializerMethodField()
 
     class Meta:
         model = Invoice
@@ -154,18 +165,28 @@ class InvoiceSerializer(TenantSerializer):
             "id",
             "client",
             "client_name",
+            "project",
             "number",
             "status",
             "issued_on",
             "due_on",
+            "payment_release_on",
+            "auto_generate_payment",
             "notes",
             "subtotal",
             "total",
             "paid_at",
             "items",
+            "payment",
             "created_at",
         )
         read_only_fields = ("status", "subtotal", "total", "paid_at", "created_at")
+
+    def get_payment(self, obj):
+        payment = obj.payments.first()
+        if not payment:
+            return None
+        return AdminPaymentSerializer(payment, context=self.context).data
 
     def validate_client(self, value):
         if (
@@ -175,7 +196,28 @@ class InvoiceSerializer(TenantSerializer):
             raise serializers.ValidationError("Cliente inválido.")
         return value
 
+    def validate_project(self, value):
+        if value and value.organization_id != current_membership(self.context["request"]).organization_id:
+            raise serializers.ValidationError("Projeto inválido.")
+        return value
+
     def validate(self, data):
+        release = data.get(
+            "payment_release_on", getattr(self.instance, "payment_release_on", None)
+        )
+        issued = data.get("issued_on", getattr(self.instance, "issued_on", None))
+        if release and issued and release < issued:
+            raise serializers.ValidationError(
+                {"payment_release_on": "A liberação não pode anteceder a emissão."}
+            )
+        if not self.instance and not data.get("items"):
+            raise serializers.ValidationError({"items": "Informe ao menos um item."})
+        client = data.get("client", getattr(self.instance, "client", None))
+        project = data.get("project", getattr(self.instance, "project", None))
+        if project and client and project.client_id != client.id:
+            raise serializers.ValidationError(
+                {"project": "O projeto deve pertencer ao cliente selecionado."}
+            )
         if data.get("due_on", getattr(self.instance, "due_on", None)) < data.get(
             "issued_on", getattr(self.instance, "issued_on", None)
         ):
@@ -212,6 +254,32 @@ class InvoiceSerializer(TenantSerializer):
         invoice = super().create(data)
         self._items(invoice, items)
         return invoice
+
+
+class AdminPaymentSerializer(serializers.ModelSerializer):
+    public_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = InvoicePayment
+        fields = ("status", "expires_at", "public_url")
+
+    def get_public_url(self, obj):
+        return f"{__import__('django.conf', fromlist=['settings']).settings.FRONTEND_URL}/pagar/{obj.public_token}"
+
+
+class PublicPaymentSerializer(serializers.ModelSerializer):
+    description = serializers.SerializerMethodField()
+    amount = serializers.DecimalField(max_digits=12, decimal_places=2)
+    due_date = serializers.DateField(source="invoice.due_on")
+    qr_code = serializers.URLField(source="qr_code_url")
+
+    class Meta:
+        model = InvoicePayment
+        fields = ("description", "amount", "due_date", "status", "pix_code", "qr_code", "expires_at")
+
+    def get_description(self, obj):
+        item = obj.invoice.items.first()
+        return item.description if item else f"Fatura {obj.invoice.number}"
 
     @transaction.atomic
     def update(self, instance, data):

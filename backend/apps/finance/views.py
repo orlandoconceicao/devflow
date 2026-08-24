@@ -4,21 +4,24 @@ from decimal import Decimal
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.utils import timezone
-from rest_framework import viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
-from rest_framework.permissions import BasePermission
+from rest_framework.permissions import AllowAny, BasePermission
 from rest_framework.response import Response
 
 from apps.organizations.models import OrganizationMembership
 from apps.work.context import current_membership
 
-from .models import Expense, Invoice, MemberRate, Revenue, TimeEntry
+from .models import Expense, Invoice, InvoicePayment, MemberRate, Revenue, TimeEntry
+from .payments import PaymentProviderError, generate_pix, get_pix_provider, process_stripe_event
 from .serializers import (
     ExpenseSerializer,
     InvoiceSerializer,
+    AdminPaymentSerializer,
     MemberRateSerializer,
     RevenueSerializer,
     TimeEntrySerializer,
+    PublicPaymentSerializer,
 )
 
 
@@ -155,7 +158,7 @@ class RevenueViewSet(TenantViewSet):
 
 class InvoiceViewSet(TenantViewSet):
     queryset = Invoice.objects.select_related("client").prefetch_related(
-        "items__time_entries"
+        "items__time_entries", "payments"
     )
     serializer_class = InvoiceSerializer
     permission_classes = [FinancePermission]
@@ -174,10 +177,49 @@ class InvoiceViewSet(TenantViewSet):
     def cancel(self, request, pk=None):
         return self._status(self.get_object(), Invoice.Status.CANCELLED)
 
+    @action(detail=True, methods=["post"], url_path="generate-payment")
+    def generate_payment(self, request, pk=None):
+        try:
+            payment = generate_pix(
+                self.get_object(), regenerate=bool(request.data.get("regenerate"))
+            )
+        except PaymentProviderError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
+        return Response(AdminPaymentSerializer(payment, context={"request": request}).data)
+
     def _status(self, invoice, status):
         invoice.status = status
         invoice.save(update_fields=["status", "paid_at"])
         return Response(self.get_serializer(invoice).data)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def public_payment(request, token):
+    payment = InvoicePayment.objects.select_related("invoice").prefetch_related(
+        "invoice__items"
+    ).filter(public_token=token).first()
+    if not payment:
+        return Response({"detail": "Cobrança não encontrada."}, status=404)
+    if payment.status == InvoicePayment.Status.PENDING and payment.expires_at <= timezone.now():
+        payment.status = InvoicePayment.Status.EXPIRED
+        payment.save(update_fields=["status", "updated_at"])
+    return Response(PublicPaymentSerializer(payment).data)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def stripe_invoice_webhook(request):
+    try:
+        event = get_pix_provider().parse_webhook(
+            request.body, request.headers.get("Stripe-Signature", "")
+        )
+        result = process_stripe_event(event)
+    except PaymentProviderError as exc:
+        return Response({"detail": str(exc)}, status=400)
+    except Exception:
+        return Response({"detail": "Assinatura ou payload inválido."}, status=400)
+    return Response({"received": True, "result": result})
 
 
 @api_view(["GET"])

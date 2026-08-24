@@ -47,7 +47,7 @@ npm run dev
 
 ## Variáveis de ambiente
 
-Copie `.env.example`. São necessárias `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, `FRONTEND_URL` e `VITE_API_URL`. As variáveis `PAYMENT_PROVIDER`, `PAYMENT_API_KEY`, `PAYMENT_WEBHOOK_SECRET` e `PAYMENT_CONTACT` estão reservadas e devem permanecer vazias nesta etapa.
+Copie `.env.example`. São necessárias `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, `FRONTEND_URL` e `VITE_API_URL`. As variáveis de pagamento só devem ser preenchidas no backend e podem permanecer vazias quando checkout e cobranças Pix não forem usados.
 
 ## Endpoints
 
@@ -78,6 +78,18 @@ Não existe endpoint de alteração de plano. Portanto, um cliente não pode ati
 
 `/login`, `/register`, `/onboarding/workspace`, `/onboarding/plan`, `/dashboard`, `/clients`, `/clients/:id`, `/projects`, `/projects/:id`, `/settings/profile` e `/settings/billing`. Tarefas, Kanban, arquivos e financeiro continuam preparados como próximas etapas.
 
+## Autenticação, workspace e equipe
+
+Todo mundo usa o mesmo `/login`, mas ninguém compartilha credenciais. `User` é a identidade global da pessoa — email, senha individual com hash e sessão JWT. `Organization` é o workspace da empresa. `OrganizationMembership` liga uma pessoa a um workspace e guarda a função atual (`OWNER`, `ADMIN`, `MEMBER`; `CLIENT` permanece separado para o portal). A autorização consulta a membership ativa no banco em cada requisição, portanto uma mudança de função ou remoção passa a valer mesmo para um JWT emitido anteriormente.
+
+Quem cria o workspace recebe automaticamente a membership `OWNER`. Somente esse Owner abre `/team`, lista a equipe, convida, muda entre ADMIN/MEMBER e remove acesso. O Owner não pode remover a si mesmo nem ser rebaixado. Admin atua nas operações já permitidas, mas não gerencia propriedade ou equipe. Member visualiza somente projetos dos quais é `ProjectMember`; pertencer à empresa não concede automaticamente acesso a todos os projetos, financeiro ou configurações administrativas.
+
+O convite começa em **Equipe > Convidar membro**. O backend aceita somente ADMIN ou MEMBER, normaliza o email, cria um token aleatório e armazena apenas seu SHA-256. `/team-invitations/accept?token=...` expira em sete dias e é de uso único. Uma pessoa nova cria a própria senha; se o email já possuir `User`, precisa comprovar a senha da conta e recebe apenas outra membership, sem duplicação. O Owner nunca vê nem envia a senha. Depois, todos entram normalmente por `/login`.
+
+Remover alguém desativa a membership e retira suas participações em projetos daquele workspace, sem apagar o `User`. `current_membership` exige `is_active=True`, e os querysets filtram a organização indicada por `X-Organization-ID`. Assim, mudar o header, usar ID de outro workspace ou conservar um JWT não contorna a revogação. Menus filtrados no React são UX; a segurança real permanece nas permissions e querysets do backend.
+
+Para construir o fluxo do zero: modele User, Organization e Membership; atribua OWNER ao criador em transação; implemente convite com token armazenado como hash, expiração e uso único; aceite criando ou associando o User; valide membership ativa em cada request; limite projetos com ProjectMember; bloqueie mass assignment de role; reflita isso nos menus e teste replay, remoção e IDOR.
+
 ## RBAC de clientes e projetos
 
 | Ação | OWNER | ADMIN | MEMBER | CLIENT |
@@ -98,6 +110,8 @@ cd frontend && npm run build
 ```
 
 Os testes cobrem autenticação, validações, refresh/logout, perfil, workspaces, planos, clientes, projetos, membros, filtros, validações, dashboard, RBAC e tentativas de IDOR entre tenants.
+
+A suíte de equipe cobre Owner, membership ativa/inativa, login individual, convite para usuário novo e existente, expiração/reutilização, alteração de função, remoção, revogação com JWT ainda válido e isolamento entre workspaces. O frontend verifica que apenas Owner visualiza a gestão.
 
 ## Roadmap
 
@@ -130,13 +144,25 @@ Uploads aceitam PDF, PNG, JPG/JPEG, WEBP, TXT, DOCX e XLSX, com limite de 10 MB 
 - Free: R$ 0/mês.
 - DevFlow Pro: R$ 25/mês.
 
-O backend é a fonte de verdade dos preços. Pagamentos, cartões, PIX, gateways e webhooks ainda não foram implementados.
+O backend é a fonte de verdade dos preços. A assinatura SaaS usa Stripe Checkout e as faturas de clientes podem usar Pix dinâmico; o DevFlow não armazena dados de cartão.
 
 ## Horas, financeiro e relatórios
 
 O Prompt 4 adiciona timer com somente um registro ativo por pessoa/workspace, lançamentos manuais, custos e valores de cobrança, receitas, despesas, faturas de clientes, relatórios agrupados e exportação CSV. Faturas de clientes são independentes da assinatura SaaS do DevFlow.
 
 Principais rotas: `/api/time-entries/`, `/api/expenses/`, `/api/revenues/`, `/api/invoices/`, `/api/finance/dashboard/`, `/api/reports/` e `/api/reports/hours/export/`.
+
+### Cobranças Pix públicas
+
+O pagamento de uma fatura não depende do Portal do Cliente. Apenas OWNER ou ADMIN entra no painel, cria a cobrança em **Financeiro > Cobranças** e gera o Pix. O pagador recebe `/pagar/<uuid>` e abre diretamente, sem User, cadastro, senha ou JWT. `Client` permanece apenas como cadastro comercial interno.
+
+A implementação reutiliza `Invoice`, itens em `Decimal`, `Client`, `Project` opcional e `Revenue`. `InvoicePayment` representa uma tentativa técnica do provedor. Uma tentativa pendente é reutilizada; regenerar explicitamente um Pix expirado cria outra tentativa na mesma `Invoice`, nunca outra fatura. A geração futura usa `payment_release_on`, `auto_generate_payment` e a tarefa Celery Beat `generate_scheduled_invoice_payments`; **Gerar agora** continua disponível.
+
+O UUID público é imprevisível e não enumera IDs. `GET /api/public/payments/<uuid>/` não exige autenticação e retorna apenas descrição, valor, vencimento, status, QR, Pix Copia e Cola e expiração. Não permite editar valor/cliente/status nem expõe custos, workspace, IDs internos ou credenciais.
+
+O Stripe cria um `PaymentIntent` Pix dinâmico no backend. QR e Copia e Cola vêm do provedor e identificam aquela cobrança; não são uma chave fixa. A página faz polling somente para leitura e oculta o Pix quando pago ou expirado. A confirmação confiável ocorre exclusivamente em `POST /api/webhooks/payments/stripe/invoices/`, com assinatura Stripe sobre o corpo bruto. O backend confere PaymentIntent, BRL e valor em centavos, marca a fatura e cria uma única receita. O ID único do evento e o vínculo único `Revenue.invoice` tornam reentregas idempotentes.
+
+O painel permite copiar/abrir o link e gerar novo Pix após expiração. Nenhuma API paga de WhatsApp foi adicionada; o link pode ser enviado manualmente por email ou WhatsApp.
 
 ## Portal, notificações e assinatura Pro
 
@@ -146,7 +172,7 @@ O plano Free permite 3 projetos ativos, 2 membros e 500 MB. O Pro custa R$ 25,00
 
 Billing usa Stripe Checkout em modo `subscription`. O backend usa exclusivamente o plano Pro de R$ 25 cadastrado e o `STRIPE_PRO_PRICE_ID`; o frontend não informa valor. A assinatura só muda mediante webhook Stripe assinado e idempotente. Eventos tratados: `checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.updated` e `customer.subscription.deleted`.
 
-Para ativar checkout sandbox, configure `PAYMENT_PROVIDER=stripe`, `PAYMENT_API_KEY`, `PAYMENT_WEBHOOK_SECRET` e `STRIPE_PRO_PRICE_ID`. Para testar webhooks localmente, use o Stripe CLI oficial encaminhando para `/api/webhooks/payments/stripe/`. Sem essas credenciais, todo o restante funciona localmente e o checkout retorna erro de configuração sem ativar Pro.
+Para ativar checkout sandbox, configure `PAYMENT_PROVIDER=stripe`, `PAYMENT_API_KEY`, `PAYMENT_WEBHOOK_SECRET` e `STRIPE_PRO_PRICE_ID`. Para cobranças Pix, configure `PIX_WEBHOOK_SECRET` com o segredo exclusivo do endpoint de faturas e `PIX_EXPIRATION_SECONDS` (10 a 1.209.600 segundos). Credenciais ficam somente no backend e `.env.example` contém placeholders. Use Stripe CLI/chaves de teste: assinatura SaaS aponta para `/api/webhooks/payments/stripe/`; Pix de clientes, para `/api/webhooks/payments/stripe/invoices/`. Os testes usam mocks e nunca cobram dinheiro real.
 
 Serviços locais:
 
@@ -154,6 +180,8 @@ Serviços locais:
 docker compose up --build
 docker compose logs -f celery_worker
 ```
+
+Para validar o fluxo do zero: configure chaves Stripe de teste, suba banco, Redis, backend, worker, beat e frontend; crie cliente/projeto e uma cobrança; copie o link e abra em janela anônima. Ele deve abrir sem login e manter valor, QR e código somente para leitura. Envie um evento sandbox assinado e confirme a mudança para pago. Execute `docker compose run --rm backend python manage.py check`, `docker compose run --rm backend python manage.py test`, `cd frontend`, `npm test`, `npm run lint` e `npm run build`.
 
 ## Demonstração local
 

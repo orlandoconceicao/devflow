@@ -10,6 +10,8 @@ from .views import (
     export_hours,
     finance_dashboard,
     reports,
+    public_payment,
+    stripe_invoice_webhook,
 )
 
 router = DefaultRouter()
@@ -23,4 +25,6 @@ urlpatterns = [
     path("finance/dashboard/", finance_dashboard),
     path("reports/", reports),
     path("reports/hours/export/", export_hours),
+    path("public/payments/<uuid:token>/", public_payment),
+    path("webhooks/payments/stripe/invoices/", stripe_invoice_webhook),
 ]

@@ -148,7 +148,11 @@ CELERY_BEAT_SCHEDULE = {
     "invoice-reminders": {
         "task": "apps.portal.tasks.remind_due_invoices",
         "schedule": 86400,
-    }
+    },
+    "scheduled-invoice-payments": {
+        "task": "apps.portal.tasks.generate_scheduled_invoice_payments",
+        "schedule": 3600,
+    },
 }
 EMAIL_BACKEND = config(
     "EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend"
@@ -162,6 +166,8 @@ DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="DevFlow <suporte@loca
 PAYMENT_PROVIDER = config("PAYMENT_PROVIDER", default="")
 PAYMENT_API_KEY = config("PAYMENT_API_KEY", default="")
 PAYMENT_WEBHOOK_SECRET = config("PAYMENT_WEBHOOK_SECRET", default="")
+PIX_WEBHOOK_SECRET = config("PIX_WEBHOOK_SECRET", default="")
+PIX_EXPIRATION_SECONDS = config("PIX_EXPIRATION_SECONDS", default=86400, cast=int)
 STRIPE_PRO_PRICE_ID = config("STRIPE_PRO_PRICE_ID", default="")
 PAYMENT_CONTACT = config("PAYMENT_CONTACT", default="")
 SECURE_SSL_REDIRECT = not DEBUG

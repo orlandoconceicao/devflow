@@ -39,7 +39,7 @@ export function ClientPortal() {
         <h2>Seus projetos</h2>
         {d.data?.projects.length ? (
           d.data.projects.map((p) => (
-            <Link className="project-row" to={`/client/projects/${p.id}`} key={p.id}>
+            <Link className="project-row" to={`/client-portal/projects/${p.id}`} key={p.id}>
               <span>
                 <b>{p.name}</b>
                 <small>{p.description}</small>
@@ -125,7 +125,7 @@ export function AcceptClientInvitation() {
       ) : status === 'success' ? (
         <>
           <p>Convite aceito com sucesso.</p>
-          <Link className="button" to="/client">
+          <Link className="button" to="/client-portal">
             Abrir portal
           </Link>
         </>

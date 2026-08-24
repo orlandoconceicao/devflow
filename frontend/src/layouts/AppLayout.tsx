@@ -30,7 +30,14 @@ const workspaceLinks = [
   ['/finance', 'Financeiro', WalletCards],
   ['/reports', 'Relatórios', Clock3],
 ] as const;
-const clientLinks = [['/client', 'Portal do cliente', BriefcaseBusiness]] as const;
+const clientLinks = [['/client-portal', 'Portal do cliente', BriefcaseBusiness]] as const;
+const linksForRole = (role: Role | null) => {
+  if (role === 'OWNER') return workspaceLinks;
+  if (role === 'ADMIN') return workspaceLinks.filter(([to]) => to !== '/team');
+  return workspaceLinks.filter(([to]) =>
+    ['/dashboard', '/projects', '/tasks', '/time', '/reports'].includes(to),
+  );
+};
 export function AppLayout() {
   const [open, setOpen] = useState(false);
   const [workspace, setWorkspace] = useState<'loading' | 'present' | 'missing' | 'error'>(
@@ -41,7 +48,8 @@ export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const hasWorkspace = workspace === 'present';
-  const isClientRoute = location.pathname === '/client' || location.pathname.startsWith('/client/');
+  const isClientRoute =
+    location.pathname === '/client-portal' || location.pathname.startsWith('/client-portal/');
   const isClientCommonRoute =
     location.pathname === '/notifications' ||
     location.pathname === '/settings/profile' ||
@@ -63,7 +71,7 @@ export function AppLayout() {
           setRole(organization.role);
           setWorkspace('present');
           if (organization.role === 'CLIENT' && !isClientRoute && !isClientCommonRoute) {
-            navigate('/client', { replace: true });
+            navigate('/client-portal', { replace: true });
           } else if (organization.role !== 'CLIENT' && isClientRoute) {
             navigate('/dashboard', { replace: true });
           }
@@ -92,7 +100,7 @@ export function AppLayout() {
           <i>⌁</i>DevFlow
         </div>
         <nav>
-          {(role === 'CLIENT' ? clientLinks : workspaceLinks).map(([to, label, Icon]) => (
+          {(role === 'CLIENT' ? clientLinks : linksForRole(role)).map(([to, label, Icon]) => (
             <NavLink key={to} to={to} onClick={() => setOpen(false)}>
               <Icon size={18} />
               {label}

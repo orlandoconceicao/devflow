@@ -3,6 +3,8 @@ import type {
   Expense,
   FinanceDashboard,
   Invoice,
+  AdminPayment,
+  PublicPayment,
   PaginatedResponse,
   ReportData,
   Revenue,
@@ -23,8 +25,18 @@ export const financeService = {
   expenses: () => api.get<PaginatedResponse<Expense>>('/expenses/').then((r) => r.data),
   revenues: () => api.get<PaginatedResponse<Revenue>>('/revenues/').then((r) => r.data),
   invoices: () => api.get<PaginatedResponse<Invoice>>('/invoices/').then((r) => r.data),
+  createInvoice: (data: {
+    client: number; project: number | null; number: string; issued_on: string; due_on: string;
+    payment_release_on: string; auto_generate_payment: boolean;
+    items: { description: string; quantity: string; unit_price: string }[];
+  }) => api.post<Invoice>('/invoices/', data).then((r) => r.data),
+  generatePayment: (id: number, regenerate = false) =>
+    api.post<AdminPayment>(`/invoices/${id}/generate-payment/`, { regenerate }).then((r) => r.data),
   createExpense: (data: Partial<Expense>) => api.post<Expense>('/expenses/', data),
   createRevenue: (data: Partial<Revenue>) => api.post<Revenue>('/revenues/', data),
+};
+export const publicPaymentService = {
+  get: (token: string) => api.get<PublicPayment>(`/public/payments/${token}/`).then((r) => r.data),
 };
 export const reportService = {
   get: (group: string) =>

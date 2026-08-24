@@ -32,5 +32,20 @@ export const useRevenues = () =>
   useQuery({ queryKey: ['revenues'], queryFn: financeService.revenues });
 export const useInvoices = () =>
   useQuery({ queryKey: ['invoices'], queryFn: financeService.invoices });
+export function useCreateInvoice() {
+  const q = useQueryClient();
+  return useMutation({
+    mutationFn: financeService.createInvoice,
+    onSuccess: () => q.invalidateQueries({ queryKey: ['invoices'] }),
+  });
+}
+export function useGeneratePayment() {
+  const q = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, regenerate = false }: { id: number; regenerate?: boolean }) =>
+      financeService.generatePayment(id, regenerate),
+    onSuccess: () => q.invalidateQueries({ queryKey: ['invoices'] }),
+  });
+}
 export const useReport = (group: string) =>
   useQuery({ queryKey: ['report', group], queryFn: () => reportService.get(group) });

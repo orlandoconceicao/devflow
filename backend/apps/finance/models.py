@@ -1,3 +1,4 @@
+import uuid
 from decimal import Decimal
 
 from django.conf import settings
@@ -120,6 +121,13 @@ class Revenue(models.Model):
     occurred_on = models.DateField()
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
+    invoice = models.OneToOneField(
+        "Invoice",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="revenue",
+    )
 
 
 class Invoice(models.Model):
@@ -135,12 +143,17 @@ class Invoice(models.Model):
     client = models.ForeignKey(
         "work.Client", on_delete=models.PROTECT, related_name="invoices"
     )
+    project = models.ForeignKey(
+        "work.Project", on_delete=models.SET_NULL, null=True, blank=True, related_name="invoices"
+    )
     number = models.CharField(max_length=30)
     status = models.CharField(
         max_length=12, choices=Status.choices, default=Status.DRAFT
     )
     issued_on = models.DateField()
     due_on = models.DateField()
+    payment_release_on = models.DateField(null=True, blank=True)
+    auto_generate_payment = models.BooleanField(default=False)
     notes = models.TextField(blank=True)
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
@@ -170,3 +183,48 @@ class InvoiceItem(models.Model):
     def save(self, *args, **kwargs):
         self.total = (self.quantity or Decimal("0")) * (self.unit_price or Decimal("0"))
         super().save(*args, **kwargs)
+
+
+class InvoicePayment(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Aguardando pagamento"
+        PAID = "PAID", "Pago"
+        EXPIRED = "EXPIRED", "Expirado"
+        CANCELLED = "CANCELLED", "Cancelado"
+        FAILED = "FAILED", "Falhou"
+
+    invoice = models.ForeignKey(
+        Invoice, on_delete=models.PROTECT, related_name="payments"
+    )
+    public_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    provider = models.CharField(max_length=20, default="stripe")
+    provider_payment_id = models.CharField(max_length=120, unique=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3, default="BRL")
+    status = models.CharField(
+        max_length=12, choices=Status.choices, default=Status.PENDING
+    )
+    pix_code = models.TextField()
+    qr_code_url = models.URLField(max_length=1000)
+    expires_at = models.DateTimeField()
+    paid_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["invoice", "status"])]
+
+
+class InvoicePaymentEvent(models.Model):
+    provider = models.CharField(max_length=20, default="stripe")
+    provider_event_id = models.CharField(max_length=120, unique=True)
+    event_type = models.CharField(max_length=80)
+    payment = models.ForeignKey(
+        InvoicePayment,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="events",
+    )
+    processed_at = models.DateTimeField(auto_now_add=True)

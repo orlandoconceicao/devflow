@@ -28,7 +28,8 @@ class SubscriptionView(generics.RetrieveAPIView):
 
     def get_object(self):
         qs = Subscription.objects.filter(
-            organization__memberships__user=self.request.user
+            organization__memberships__user=self.request.user,
+            organization__memberships__is_active=True,
         ).select_related("plan", "organization")
         organization_id = self.request.query_params.get("organization_id")
         if organization_id:

@@ -54,7 +54,7 @@ class ProjectMemberSerializer(serializers.ModelSerializer):
     def validate_user(self, user):
         project = self.context["project"]
         if not OrganizationMembership.objects.filter(
-            organization=project.organization, user=user
+            organization=project.organization, user=user, is_active=True
         ).exists():
             raise serializers.ValidationError(
                 "O usuário não pertence ao workspace do projeto."

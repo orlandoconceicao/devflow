@@ -61,3 +61,23 @@ def remind_due_invoices():
             )
         count += 1
     return count
+
+
+@shared_task
+def generate_scheduled_invoice_payments():
+    from apps.finance.models import Invoice
+    from apps.finance.payments import PaymentProviderError, generate_pix
+
+    count = 0
+    invoices = Invoice.objects.filter(
+        auto_generate_payment=True,
+        payment_release_on__lte=timezone.localdate(),
+        status__in=[Invoice.Status.DRAFT, Invoice.Status.SENT],
+    ).exclude(payments__status="PENDING", payments__expires_at__gt=timezone.now())
+    for invoice in invoices:
+        try:
+            generate_pix(invoice)
+            count += 1
+        except PaymentProviderError:
+            continue
+    return count

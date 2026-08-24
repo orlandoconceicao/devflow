@@ -242,7 +242,7 @@ def accept_invitation(request):
     OrganizationMembership.objects.update_or_create(
         organization=inv.organization,
         user=request.user,
-        defaults={"role": OrganizationMembership.Role.CLIENT},
+        defaults={"role": OrganizationMembership.Role.CLIENT, "is_active": True},
     )
     inv.accepted_at = timezone.now()
     inv.save(update_fields=["accepted_at"])

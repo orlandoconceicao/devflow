@@ -5,7 +5,7 @@ from apps.organizations.models import OrganizationMembership
 
 def current_membership(request):
     qs = OrganizationMembership.objects.select_related("organization").filter(
-        user=request.user
+        user=request.user, is_active=True
     )
     organization_id = request.headers.get("X-Organization-ID")
     if organization_id:
