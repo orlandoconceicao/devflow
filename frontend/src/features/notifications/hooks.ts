@@ -2,6 +2,10 @@ import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import type { Notification, PaginatedResponse } from '../../types';
+
+export const shouldUseNotificationsSocket = (configuredUrl: string | undefined, hostname: string) =>
+  Boolean(configuredUrl?.trim()) || ['localhost', '127.0.0.1'].includes(hostname);
+
 export const useNotifications = (unread = false) =>
   useQuery({
     queryKey: ['notifications', unread],
@@ -16,7 +20,7 @@ export const useUnreadCount = (enabled = true) =>
   useQuery({
     queryKey: ['notification-count'],
     queryFn: () => api.get<{ count: number }>('/notifications/unread-count/').then((r) => r.data),
-    refetchInterval: 60000,
+    refetchInterval: 30000,
     enabled,
   });
 export function useNotificationsSocket(enabled = true) {
@@ -30,9 +34,10 @@ export function useNotificationsSocket(enabled = true) {
       if (!enabled) return;
       const token = localStorage.getItem('access');
       if (!token || closed) return;
+      const configuredBase = import.meta.env.VITE_WS_URL?.trim();
+      if (!shouldUseNotificationsSocket(configuredBase, location.hostname)) return;
       const base =
-        import.meta.env.VITE_WS_URL ||
-        `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}`;
+        configuredBase || `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}`;
       ws = new WebSocket(`${base}/ws/notifications/?token=${token}`);
       ws.onopen = () => (attempt = 0);
       ws.onmessage = () => {

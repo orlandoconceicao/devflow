@@ -11,3 +11,25 @@
 Backup diário sugerido: `pg_dump` criptografado, retenção de 7 diários e 4 semanais em local externo. Faça teste mensal de restauração. Redis não é fonte de verdade; volumes de media exigem backup ou migração para S3/R2.
 
 Rollback: mantenha a imagem anterior, restaure-a e aplique somente migrations compatíveis. Faça backup antes de migrations destrutivas.
+
+## Vercel
+
+O deployment atual separa frontend e backend:
+
+- frontend: `https://devflow-frontend-delta.vercel.app`;
+- backend: `https://devflow-backend-swart.vercel.app`;
+- API: `https://devflow-backend-swart.vercel.app/api`.
+
+Configure `VITE_API_URL` somente no frontend, apontando para a API acima. No
+backend, configure `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS` e
+`CSRF_TRUSTED_ORIGINS` com a origem exata do frontend. O CORS estende os headers
+padrão com `x-organization-id`; não habilite `CORS_ALLOW_ALL_ORIGINS`.
+
+`frontend/vercel.json` mantém o fallback SPA para `index.html`. Não transforme
+esse fallback em proxy de API. URLs como `/dashboard` e `/settings/billing`
+devem chegar ao React Router ao serem abertas diretamente.
+
+Redis não é obrigatório na Vercel. Com `REDIS_URL` vazio, o backend usa os
+fallbacks em memória definidos em `settings.py`. WebSocket só deve ser ativado
+no frontend quando `VITE_WS_URL` apontar explicitamente para infraestrutura
+compatível; caso contrário, notificações usam polling HTTP.

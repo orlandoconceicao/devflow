@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { LoadingState } from './components/ui';
 import { useAuth } from './features/auth/AuthContext';
@@ -31,6 +31,11 @@ function Protected() {
   if (isLoading) return <LoadingState />;
   return isAuthenticated ? <AppLayout /> : <Navigate to="/login" replace />;
 }
+function RootRedirect() {
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) return <LoadingState />;
+  return <Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />;
+}
 function ProtectedPage({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
@@ -42,10 +47,30 @@ function ProtectedPage({ children }: { children: ReactNode }) {
     <Navigate to={`/login?next=${encodeURIComponent(returnTo)}`} replace />
   );
 }
+
+function LegacyClientProjectRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/client-portal/projects/${id}`} replace />;
+}
+
+export const CORE_ROUTE_PATHS = [
+  '/',
+  '/login',
+  '/register',
+  '/dashboard',
+  '/clients',
+  '/projects',
+  '/tasks',
+  '/team',
+  '/finance',
+  '/settings',
+  '/settings/billing',
+] as const;
+
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<RootRedirect />} />
 
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
@@ -81,6 +106,8 @@ export default function App() {
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/client-portal" element={<ClientPortal />} />
         <Route path="/client-portal/projects/:id" element={<ClientProject />} />
+        <Route path="/client" element={<Navigate to="/client-portal" replace />} />
+        <Route path="/client/projects/:id" element={<LegacyClientProjectRedirect />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/billing/success" element={<BillingResult />} />
         <Route path="/billing/cancel" element={<BillingResult cancel />} />

@@ -49,11 +49,13 @@ function AuthShell({
         </h1>
         <p>Seu espaço para projetos, equipe e resultados — tudo em um só fluxo.</p>
       </div>
-      <section className="auth-card">
-        <h2>{title}</h2>
-        <p>{subtitle}</p>
-        {children}
-      </section>
+      <main className="auth-panel">
+        <section className="auth-card">
+          <h2>{title}</h2>
+          <p>{subtitle}</p>
+          {children}
+        </section>
+      </main>
     </div>
   );
 }
@@ -90,17 +92,19 @@ export function LoginPage() {
           <small>{errors.email?.message}</small>
         </label>
         <label>
-          Senha
+          <span className="auth-label-row">
+            <span>Senha</span>
+            <Link to="/password-reset">Esqueci minha senha</Link>
+          </span>
           <Input type="password" {...register('password')} />
           <small>{errors.password?.message}</small>
         </label>
         {serverError && <div className="form-error">{serverError}</div>}
         <Button disabled={isSubmitting}>{isSubmitting ? 'Entrando…' : 'Entrar'}</Button>
       </form>
-      <footer>
-        <Link to="/password-reset">Esqueci minha senha</Link>
-        <br />
-        Não tem uma conta? <Link to="/register">Criar conta</Link>
+      <footer className="auth-login-footer">
+        <span className="auth-divider">ou</span>
+        <span>Não tem uma conta? <Link to="/register">Criar conta</Link></span>
       </footer>
     </AuthShell>
   );

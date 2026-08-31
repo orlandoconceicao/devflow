@@ -3,8 +3,15 @@ import hmac
 from unittest.mock import Mock, patch
 
 from django.test import SimpleTestCase, override_settings
+from rest_framework import status
+from rest_framework.test import APITestCase
 
+from apps.accounts.models import User
+from apps.organizations.models import OrganizationMembership
+from apps.organizations.services import create_organization
 from apps.payments.mercado_pago import MercadoPagoClient
+
+from .models import Plan
 
 
 @override_settings(
@@ -63,3 +70,72 @@ class MercadoPagoClientTests(SimpleTestCase):
             headers["X-Idempotency-Key"],
             "devflow-invoice-pix-7-public-token",
         )
+
+
+class BillingPermissionTests(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.free = Plan.objects.create(slug="free", name="Free", price="0.00")
+        cls.pro = Plan.objects.create(slug="pro", name="Pro", price="25.00")
+        cls.owner = User.objects.create_user(
+            email="billing-owner@example.test", password="StrongPass!2026"
+        )
+        cls.member = User.objects.create_user(
+            email="billing-member@example.test", password="StrongPass!2026"
+        )
+        cls.other_owner = User.objects.create_user(
+            email="billing-other@example.test", password="StrongPass!2026"
+        )
+        cls.organization = create_organization(user=cls.owner, name="Billing A")
+        cls.other_organization = create_organization(
+            user=cls.other_owner, name="Billing B"
+        )
+        OrganizationMembership.objects.create(
+            organization=cls.organization,
+            user=cls.member,
+            role=OrganizationMembership.Role.MEMBER,
+        )
+
+    def headers(self, organization):
+        return {"HTTP_X_ORGANIZATION_ID": str(organization.id)}
+
+    def test_owner_can_read_billing_and_member_cannot_manage_it(self):
+        self.client.force_authenticate(self.owner)
+        self.assertEqual(
+            self.client.get(
+                "/api/billing/subscription/", **self.headers(self.organization)
+            ).status_code,
+            status.HTTP_200_OK,
+        )
+        self.assertEqual(
+            self.client.get(
+                "/api/billing/payments/", **self.headers(self.organization)
+            ).status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.client.force_authenticate(self.member)
+        for method, path in (
+            (self.client.get, "/api/billing/subscription/"),
+            (self.client.get, "/api/billing/payments/"),
+            (self.client.post, "/api/billing/checkout/"),
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    method(path, **self.headers(self.organization)).status_code,
+                    status.HTTP_403_FORBIDDEN,
+                )
+
+    def test_owner_cannot_switch_to_another_tenant_with_header(self):
+        self.client.force_authenticate(self.owner)
+        for path in (
+            "/api/billing/subscription/",
+            "/api/billing/payments/",
+            "/api/billing/checkout/",
+        ):
+            with self.subTest(path=path):
+                method = self.client.post if path.endswith("checkout/") else self.client.get
+                self.assertEqual(
+                    method(path, **self.headers(self.other_organization)).status_code,
+                    status.HTTP_403_FORBIDDEN,
+                )

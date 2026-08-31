@@ -3,6 +3,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import dj_database_url
+from corsheaders.defaults import default_headers
 from decouple import Csv, config
 from django.core.exceptions import ImproperlyConfigured
 
@@ -35,8 +36,8 @@ INSTALLED_APPS = [
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "apps.core.middleware.RequestIdMiddleware",
     "corsheaders.middleware.CorsMiddleware",
+    "apps.core.middleware.RequestIdMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -92,9 +93,13 @@ AUTH_USER_MODEL = "accounts.User"
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173")
 CORS_ALLOWED_ORIGINS = config(
     "CORS_ALLOWED_ORIGINS",
-    default=f"{FRONTEND_URL},http://127.0.0.1:5173",
+    default=(
+        f"{FRONTEND_URL},http://localhost:5173,http://127.0.0.1:5173,"
+        "https://devflow-frontend-delta.vercel.app"
+    ),
     cast=Csv(),
 )
+CORS_ALLOW_HEADERS = (*default_headers, "x-organization-id")
 CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", default=FRONTEND_URL, cast=Csv())
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [

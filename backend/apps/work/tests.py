@@ -37,6 +37,26 @@ class WorkApiTests(APITestCase):
     def headers(self, org):
         return {"HTTP_X_ORGANIZATION_ID": str(org["id"])}
 
+    def test_organization_header_requires_active_membership(self):
+        member_a = self.user("tenant-a@local.test")
+        org_a = self.org(member_a, "Tenant A")
+        member_b = self.user("tenant-b@local.test")
+        org_b = self.org(member_b, "Tenant B")
+
+        self.token(member_a)
+        self.assertEqual(
+            self.client.get("/api/dashboard/", **self.headers(org_a)).status_code,
+            200,
+        )
+        self.assertEqual(
+            self.client.get("/api/dashboard/", **self.headers(org_b)).status_code,
+            403,
+        )
+
+        user_without_workspace = self.user("no-workspace@local.test")
+        self.token(user_without_workspace)
+        self.assertEqual(self.client.get("/api/dashboard/").status_code, 403)
+
     def test_client_crud_filters_search_pagination_and_rbac(self):
         owner = self.user("owner@local.test")
         org = self.org(owner, "Alpha")

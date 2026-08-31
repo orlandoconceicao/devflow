@@ -1,7 +1,14 @@
+import json
+import os
+import subprocess
+import sys
 from decimal import Decimal
+from pathlib import Path
 
+from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.core.management import call_command
+from django.test import SimpleTestCase, override_settings
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from rest_framework import status
@@ -10,6 +17,84 @@ from rest_framework.test import APITestCase
 from apps.accounts.models import User
 from apps.organizations.models import OrganizationMembership
 from apps.subscriptions.models import Subscription
+
+
+class CorsConfigurationTests(APITestCase):
+    @override_settings(
+        CORS_ALLOWED_ORIGINS=["https://devflow-frontend-delta.vercel.app"]
+    )
+    def test_preflight_allows_frontend_and_organization_header(self):
+        origin = "https://devflow-frontend-delta.vercel.app"
+        response = self.client.options(
+            "/api/dashboard/",
+            HTTP_ORIGIN=origin,
+            HTTP_ACCESS_CONTROL_REQUEST_METHOD="GET",
+            HTTP_ACCESS_CONTROL_REQUEST_HEADERS="authorization,x-organization-id",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.headers["Access-Control-Allow-Origin"], origin)
+        self.assertIn(
+            "x-organization-id",
+            response.headers["Access-Control-Allow-Headers"].lower(),
+        )
+        self.assertIn("x-organization-id", settings.CORS_ALLOW_HEADERS)
+
+    def test_login_does_not_depend_on_organization_header(self):
+        User.objects.create_user(
+            email="login-without-org@example.com",
+            password="StrongPass!2026",
+        )
+
+        response = self.client.post(
+            "/api/auth/login/",
+            {
+                "email": "login-without-org@example.com",
+                "password": "StrongPass!2026",
+            },
+            format="json",
+            HTTP_X_ORGANIZATION_ID="999999",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("access", response.data)
+
+
+class OptionalRedisConfigurationTests(SimpleTestCase):
+    def test_empty_redis_uses_in_process_fallbacks(self):
+        backend = Path(__file__).resolve().parents[2]
+        script = (
+            "import json, django; django.setup(); from django.conf import settings; "
+            "print(json.dumps({"
+            "'redis': settings.REDIS_ENABLED, "
+            "'cache': settings.CACHES['default']['BACKEND'], "
+            "'channels': settings.CHANNEL_LAYERS['default']['BACKEND'], "
+            "'broker': settings.CELERY_BROKER_URL, "
+            "'eager': settings.CELERY_TASK_ALWAYS_EAGER}))"
+        )
+        environment = {
+            **os.environ,
+            "DJANGO_SETTINGS_MODULE": "config.settings",
+            "DEBUG": "True",
+            "DATABASE_URL": "sqlite:///devflow-redis-fallback.sqlite3",
+            "REDIS_URL": "",
+        }
+        environment.pop("CELERY_BROKER_URL", None)
+        environment.pop("CELERY_RESULT_BACKEND", None)
+        result = subprocess.run(
+            [sys.executable, "-c", script],
+            cwd=backend,
+            env=environment,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        values = json.loads(result.stdout)
+        self.assertFalse(values["redis"])
+        self.assertEqual(values["cache"], "django.core.cache.backends.locmem.LocMemCache")
+        self.assertEqual(values["channels"], "channels.layers.InMemoryChannelLayer")
+        self.assertEqual(values["broker"], "memory://")
+        self.assertTrue(values["eager"])
 
 
 class DevFlowAPITests(APITestCase):

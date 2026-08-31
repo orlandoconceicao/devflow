@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -81,29 +82,82 @@ export function ProfilePage() {
 export function BillingPage() {
   const [data, setData] = useState<Subscription | null>(null),
     [payments, setPayments] = useState<SubscriptionPayment[]>([]),
-    [loading, setLoading] = useState(true);
-  const load = () =>
-    Promise.all([
-      api.get<Subscription>('/billing/subscription/'),
-      api.get<SubscriptionPayment[]>('/billing/payments/'),
-    ])
-      .then(([s, p]) => {
-        setData(s.data);
-        setPayments(p.data);
-      })
-      .finally(() => setLoading(false));
+    [loading, setLoading] = useState(true),
+    [error, setError] = useState(''),
+    [forbidden, setForbidden] = useState(false),
+    [actionLoading, setActionLoading] = useState(false);
+  const toast = useToast();
+  const load = async () => {
+    setError('');
+    setForbidden(false);
+    try {
+      const [subscription, history] = await Promise.all([
+        api.get<Subscription>('/billing/subscription/'),
+        api.get<SubscriptionPayment[]>('/billing/payments/'),
+      ]);
+      setData(subscription.data);
+      setPayments(history.data);
+    } catch (requestError) {
+      if (axios.isAxiosError(requestError) && requestError.response?.status === 403) {
+        setForbidden(true);
+      } else {
+        setError('Não foi possível carregar os dados de cobrança. Tente novamente.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
-    load();
+    void load();
   }, []);
   const checkout = async () => {
-    const { data } = await api.post<{ url: string }>('/billing/checkout/');
-    location.assign(data.url);
+    setActionLoading(true);
+    try {
+      const { data: checkoutData } = await api.post<{ url: string }>('/billing/checkout/');
+      location.assign(checkoutData.url);
+    } catch (requestError) {
+      toast(
+        axios.isAxiosError(requestError) && requestError.response?.status === 403
+          ? 'Somente o proprietário do workspace pode gerenciar a assinatura.'
+          : 'Não foi possível iniciar a assinatura. Tente novamente.',
+        'warning',
+      );
+    } finally {
+      setActionLoading(false);
+    }
   };
   const post = async (path: string) => {
-    await api.post(path);
-    await load();
+    setActionLoading(true);
+    try {
+      await api.post(path);
+      await load();
+    } catch (requestError) {
+      toast(
+        axios.isAxiosError(requestError) && requestError.response?.status === 403
+          ? 'Somente o proprietário do workspace pode gerenciar a assinatura.'
+          : 'Não foi possível atualizar a assinatura. Tente novamente.',
+        'warning',
+      );
+    } finally {
+      setActionLoading(false);
+    }
   };
   if (loading) return <LoadingState />;
+  if (forbidden)
+    return (
+      <section className="panel state">
+        <h2>Acesso restrito</h2>
+        <p>Somente o proprietário do workspace pode consultar pagamentos e gerenciar a assinatura.</p>
+      </section>
+    );
+  if (error)
+    return (
+      <section className="panel state error">
+        <h2>Não foi possível carregar a assinatura</h2>
+        <p>{error}</p>
+        <Button className="secondary" onClick={() => { setLoading(true); void load(); }}>Tentar novamente</Button>
+      </section>
+    );
   const pro = data?.plan.slug === 'pro' && data.status === 'ACTIVE';
   return (
     <>
@@ -115,12 +169,15 @@ export function BillingPage() {
         {pro ? (
           <Button
             className="secondary"
-            onClick={() => post('/billing/cancel/')}
+            disabled={actionLoading}
+            onClick={() => void post('/billing/cancel/')}
           >
             Cancelar assinatura
           </Button>
         ) : (
-          <Button onClick={checkout}>Assinar Pro — R$ 25/mês</Button>
+          <Button disabled={actionLoading} onClick={() => void checkout()}>
+            {actionLoading ? 'Processando…' : 'Assinar Pro — R$ 25/mês'}
+          </Button>
         )}
       </div>
       <section className="billing-current">
@@ -176,16 +233,21 @@ export function BillingPage() {
 export function NotificationSettings() {
   const [email, setEmail] = useState(true),
     [inside, setInside] = useState(true),
-    [ready, setReady] = useState(false);
+    [ready, setReady] = useState(false),
+    [loadError, setLoadError] = useState('');
   const toast = useToast();
   useEffect(() => {
-    api.get('/notification-preferences/').then((r) => {
-      setEmail(r.data.email_enabled);
-      setInside(r.data.in_app_enabled);
-      setReady(true);
-    });
+    api
+      .get('/notification-preferences/')
+      .then((response) => {
+        setEmail(response.data.email_enabled);
+        setInside(response.data.in_app_enabled);
+      })
+      .catch(() => setLoadError('Não foi possível carregar as preferências de notificações.'))
+      .finally(() => setReady(true));
   }, []);
   if (!ready) return <LoadingState />;
+  if (loadError) return <section className="panel state error">{loadError}</section>;
   return (
     <>
       <div className="page-head">

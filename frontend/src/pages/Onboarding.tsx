@@ -4,8 +4,8 @@ import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { PlanCard } from '../components/PlanCard';
-import { Button, Input, LoadingState } from '../components/ui';
-import { api } from '../services/api';
+import { Button, ErrorState, Input, LoadingState } from '../components/ui';
+import { api, getApiErrorDetails } from '../services/api';
 import type { Plan } from '../types';
 const schema = z.object({ name: z.string().min(2, 'Informe o nome do workspace') });
 type Form = z.infer<typeof schema>;
@@ -27,6 +27,7 @@ function Steps({ step }: { step: number }) {
 }
 export function WorkspacePage() {
   const nav = useNavigate();
+  const [serverError, setServerError] = useState('');
   const {
     register,
     handleSubmit,
@@ -44,9 +45,16 @@ export function WorkspacePage() {
         <p>Você poderá convidar sua equipe e ajustar isso depois.</p>
         <form
           onSubmit={handleSubmit(async (v) => {
-            const { data } = await api.post<{ id: number }>('/organizations/', v);
-            localStorage.setItem('organization_id', String(data.id));
-            nav('/onboarding/plan');
+            setServerError('');
+            try {
+              const { data } = await api.post<{ id: number }>('/organizations/', v);
+              localStorage.setItem('organization_id', String(data.id));
+              nav('/onboarding/plan');
+            } catch (requestError) {
+              setServerError(
+                getApiErrorDetails(requestError, 'Não foi possível criar o workspace.').message,
+              );
+            }
           })}
         >
           <label>
@@ -54,6 +62,7 @@ export function WorkspacePage() {
             <Input placeholder="Ex: Studio Aurora" {...register('name')} />
             <small>{errors.name?.message}</small>
           </label>
+          {serverError && <div className="form-error">{serverError}</div>}
           <Button disabled={isSubmitting}>Continuar →</Button>
         </form>
       </section>
@@ -63,9 +72,17 @@ export function WorkspacePage() {
 export function PlanPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [notice, setNotice] = useState('');
+  const [error, setError] = useState('');
   const nav = useNavigate();
+  const loadPlans = () => {
+    setError('');
+    api
+      .get<Plan[]>('/plans/')
+      .then((response) => setPlans(response.data))
+      .catch(() => setError('Não foi possível carregar os planos.'));
+  };
   useEffect(() => {
-    api.get<Plan[]>('/plans/').then((r) => setPlans(r.data));
+    loadPlans();
   }, []);
   return (
     <div className="onboarding plan-page">
@@ -77,7 +94,9 @@ export function PlanPage() {
         <span className="eyebrow">ESCOLHA SEU PLANO</span>
         <h1>Comece no seu ritmo</h1>
         <p>Você pode mudar de plano quando quiser.</p>
-        {!plans.length ? (
+        {error ? (
+          <ErrorState message={error} />
+        ) : !plans.length ? (
           <LoadingState />
         ) : (
           <div className="plans">

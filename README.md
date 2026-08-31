@@ -25,7 +25,9 @@ Se essas portas já estiverem ocupadas, defina `BACKEND_PORT` e `FRONTEND_PORT` 
 
 ## Execução manual
 
-Requer Python 3.12+, Node 22+, PostgreSQL 16+ e Redis 7+. O Compose pode
+Requer Python 3.12+, Node 22+ e PostgreSQL 16+. Redis 7+ é opcional: quando
+`REDIS_URL` fica vazio, o backend usa LocMemCache, InMemoryChannelLayer, broker
+Celery em memória e execução eager. O Compose pode
 executar apenas as dependências de infraestrutura, enquanto backend e frontend
 rodam diretamente no Windows:
 
@@ -59,7 +61,12 @@ npm run dev
 
 ## Variáveis de ambiente
 
-Copie `.env.example`. São necessárias `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, `REDIS_URL`, `FRONTEND_URL` e `VITE_API_URL`. Redis atende cache/throttling, Channels e Celery, portanto deve estar disponível antes do backend. As variáveis de pagamento só devem ser preenchidas no backend e podem permanecer vazias quando checkout e cobranças Pix não forem usados.
+Copie `.env.example`. São necessárias `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`,
+configuração do PostgreSQL ou `DATABASE_URL`, `FRONTEND_URL` e `VITE_API_URL`.
+`REDIS_URL` é opcional. Quando configurado, Redis atende cache, Channels e
+Celery; quando vazio, os fallbacks locais mantêm as páginas e tarefas síncronas
+funcionando. As variáveis de pagamento só devem ser preenchidas no backend e
+podem permanecer vazias quando checkout e cobranças Pix não forem usados.
 
 ## Endpoints
 
@@ -88,7 +95,16 @@ Não existe endpoint de alteração de plano. Portanto, um cliente não pode ati
 
 ## Rotas da interface
 
-`/login`, `/register`, `/onboarding/workspace`, `/onboarding/plan`, `/dashboard`, `/clients`, `/clients/:id`, `/projects`, `/projects/:id`, `/settings/profile` e `/settings/billing`. Tarefas, Kanban, arquivos e financeiro continuam preparados como próximas etapas.
+As rotas principais são `/login`, `/register`, `/password-reset`, `/onboarding`,
+`/dashboard`, `/clients`, `/projects`, `/tasks`, `/time`, `/finance`, `/reports`,
+`/team`, `/team/chat`, `/notifications`, `/client-portal`, `/pricing`, `/settings`
+e suas páginas filhas. O fallback SPA de produção entrega `index.html` para
+essas URLs e deixa o React Router resolver a página. URLs históricas `/client`
+e `/client/projects/:id` redirecionam para o portal atual.
+
+Requisições dependentes do workspace enviam `X-Organization-ID`. O backend
+valida o ID contra a membership ativa do usuário; autenticação, planos e a
+descoberta inicial de organizações não dependem desse header.
 
 ## Autenticação, workspace e equipe
 

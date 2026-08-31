@@ -19,6 +19,7 @@ htmlcov/
 *.tmp
 *.bak
 *.old
+tests/reports/latest-report.*
 backend/media/
 backend/celerybeat-schedule*
 .env.production

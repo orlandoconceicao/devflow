@@ -2,6 +2,24 @@ import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 const API_URL = import.meta.env.VITE_API_URL ?? '/api';
 export const api = axios.create({ baseURL: API_URL });
 
+const ORGANIZATION_FREE_ENDPOINTS = [
+  '/auth/',
+  '/organizations/',
+  '/plans/',
+  '/public/',
+  '/webhooks/',
+];
+
+const needsOrganizationContext = (url = '') =>
+  !ORGANIZATION_FREE_ENDPOINTS.some((path) => url.startsWith(path));
+
+export function organizationIdForRequest(url = '') {
+  const organization = localStorage.getItem('organization_id');
+  return organization && /^\d+$/.test(organization) && needsOrganizationContext(url)
+    ? organization
+    : null;
+}
+
 export function clearAuthStorage() {
   localStorage.removeItem('access');
   localStorage.removeItem('refresh');
@@ -48,9 +66,11 @@ export function getApiErrorDetails(error: unknown, fallback: string): ApiErrorDe
 let refreshing: Promise<string> | null = null;
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('access');
-  const organization = localStorage.getItem('organization_id');
+  const organization = organizationIdForRequest(config.url);
   if (token) config.headers.Authorization = `Bearer ${token}`;
-  if (organization) config.headers['X-Organization-ID'] = organization;
+  if (organization) {
+    config.headers['X-Organization-ID'] = organization;
+  }
   return config;
 });
 api.interceptors.response.use(
