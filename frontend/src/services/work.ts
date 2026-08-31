@@ -29,17 +29,39 @@ export const organizationService = {
     return organizationRequest;
   },
   members: (id: number) =>
-    api.get<PaginatedResponse<OrganizationMembership>>(`/organizations/${id}/members/`).then((r) => r.data),
+    api
+      .get<PaginatedResponse<OrganizationMembership>>(`/organizations/${id}/members/`)
+      .then((r) => r.data),
   invite: (id: number, data: { email: string; role: Exclude<Role, 'OWNER' | 'CLIENT'> }) =>
-    api.post<{ invite_url: string }>(`/organizations/${id}/team-invitations/`, data).then((r) => r.data),
+    api
+      .post<{ invite_url: string }>(`/organizations/${id}/team-invitations/`, data)
+      .then((r) => r.data),
   invitations: (id: number) =>
-    api.get<Array<{ id:number; email:string; role:'ADMIN'|'MEMBER'; expires_at:string; status:string }>>(`/organizations/${id}/team-invitations/`).then((r) => r.data),
+    api
+      .get<
+        Array<{
+          id: number;
+          email: string;
+          role: 'ADMIN' | 'MEMBER';
+          expires_at: string;
+          status: string;
+        }>
+      >(`/organizations/${id}/team-invitations/`)
+      .then((r) => r.data),
+  cancelInvitation: (organizationId: number, invitationId: number) =>
+    api.delete(`/organizations/${organizationId}/team-invitations/${invitationId}/`),
   updateMember: (organizationId: number, membershipId: number, role: 'ADMIN' | 'MEMBER') =>
-    api.patch<OrganizationMembership>(`/organizations/${organizationId}/members/${membershipId}/`, { role }).then((r) => r.data),
+    api
+      .patch<OrganizationMembership>(`/organizations/${organizationId}/members/${membershipId}/`, {
+        role,
+      })
+      .then((r) => r.data),
   removeMember: (organizationId: number, membershipId: number) =>
     api.delete(`/organizations/${organizationId}/members/${membershipId}/`),
   approveMember: (organizationId: number, membershipId: number) =>
-    api.post<OrganizationMembership>(`/organizations/${organizationId}/members/${membershipId}/`).then((r) => r.data),
+    api
+      .post<OrganizationMembership>(`/organizations/${organizationId}/members/${membershipId}/`)
+      .then((r) => r.data),
 };
 export const clientService = {
   list: (params?: Record<string, string | number>) =>

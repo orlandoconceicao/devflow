@@ -346,13 +346,13 @@ export function ProjectDetail() {
       {tab === 'activity' && (
         <EmptyState
           title="Atividade do projeto"
-          description="As atividades registradas aparecem no dashboard nesta etapa."
+          description="As atividades registradas são consolidadas no dashboard."
         />
       )}
       {!['overview', 'team', 'activity', 'kanban'].includes(tab) && (
         <EmptyState
           title="Disponível em breve"
-          description="Este módulo será implementado nas próximas etapas."
+          description="Este módulo ainda não está disponível."
         />
       )}
       {memberOpen && (

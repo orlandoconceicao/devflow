@@ -9,7 +9,7 @@
 
 O telefone, a senha informada, documentos pessoais, dados bancários e chaves não ficam registrados neste arquivo nem no repositório.
 
-## Para rodar os Prompts 1 a 4 localmente
+## Ambiente local
 
 Você precisa somente de Docker Desktop em execução. Copie o ambiente de exemplo e suba os containers:
 
@@ -18,7 +18,7 @@ Copy-Item .env.example .env
 docker compose up --build
 ```
 
-Não é necessário domínio, banco de produção, deploy, Mercado Pago, SMTP real ou dados bancários para os Prompts 1 a 4.
+Não é necessário domínio, banco de produção, deploy, Mercado Pago, SMTP real ou dados bancários para executar os módulos principais localmente.
 
 ## Backend local com Redis
 
@@ -42,10 +42,10 @@ encerrar as dependências, use `docker compose stop db redis`. Se todo o projeto
 for executado em containers, use `docker compose up --build`; o Compose fornece
 automaticamente `redis://redis:6379/0` ao backend e aos processos Celery.
 
-## Ainda necessário nos próximos prompts
+## Recursos externos para integrações e produção
 
-- Prompt 5: Redis, Celery, notificações, portal e emails no console funcionam localmente. Pagamentos reais no ambiente de teste exigem uma conta Mercado Pago, `MERCADO_PAGO_ACCESS_TOKEN` e `MERCADO_PAGO_WEBHOOK_SECRET`.
-- Prompt 6: domínio, URLs públicas, servidor, PostgreSQL de produção, backup e secrets apenas para deploy real.
+- Redis, Celery, notificações, portal e emails no console funcionam localmente. Pagamentos reais no ambiente de teste exigem uma conta Mercado Pago, `MERCADO_PAGO_ACCESS_TOKEN` e `MERCADO_PAGO_WEBHOOK_SECRET`.
+- O ambiente de produção exige domínio, URLs públicas, servidor, PostgreSQL, política de backup e secrets configurados exclusivamente na plataforma de deploy.
 
 Nunca coloque senhas, tokens, chave PIX, documentos ou chave SSH privada em arquivos versionados.
 

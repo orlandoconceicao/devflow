@@ -1,6 +1,6 @@
 # DevFlow
 
-DevFlow é uma plataforma SaaS multi-tenant para freelancers, agências e pequenas equipes. Os Prompts 1 e 2 entregam autenticação, workspaces, RBAC, planos, clientes, projetos, equipes de projeto e dashboard com dados reais — sem pagamentos reais.
+DevFlow é uma plataforma SaaS multi-tenant para freelancers, agências e pequenas equipes. A aplicação reúne autenticação, workspaces, RBAC, planos, clientes, projetos, equipes, tarefas, operações financeiras e dashboard com dados reais.
 
 ## Stack e arquitetura
 
@@ -124,7 +124,7 @@ Para construir o fluxo do zero: modele User, Organization e Membership; atribua 
 |---|---:|---:|---:|---:|
 | Visualizar clientes | Sim | Sim | Sim | Não |
 | Criar/editar/excluir clientes | Sim | Sim | Não | Não |
-| Visualizar projetos | Todos | Todos | Somente como ProjectMember | Não nesta etapa |
+| Visualizar projetos | Todos | Todos | Somente como ProjectMember | Pelo Portal do Cliente |
 | Criar/editar/excluir projetos | Sim | Sim | Não | Não |
 | Gerenciar membros do projeto | Sim | Sim | Não | Não |
 
@@ -141,16 +141,19 @@ Os testes cobrem autenticação, validações, refresh/logout, perfil, workspace
 
 A suíte de equipe cobre Owner, membership ativa/inativa, login individual, convite para usuário novo e existente, expiração/reutilização, alteração de função, remoção, revogação com JWT ainda válido e isolamento entre workspaces. O frontend verifica que apenas Owner visualiza a gestão.
 
-## Roadmap
+## Estado dos módulos
 
-- Prompt 1: concluído — fundação SaaS.
-- Prompt 2: concluído — clientes, projetos e RBAC avançado.
-- Prompt 3: concluído — tarefas, Kanban, comentários e anexos.
-- Próximo: Prompt 4 — controle de horas e financeiro.
+- Fundação SaaS, autenticação, workspaces e RBAC: implementados.
+- Clientes, projetos e equipes de projeto: implementados.
+- Tarefas, Kanban, comentários e anexos: implementados.
+- Controle de horas, financeiro e relatórios: implementados.
+- Portal do Cliente, entregas e notificações: implementados.
+- Cobranças Pix, assinatura e webhooks do Mercado Pago: implementados.
+- Testes automatizados, CI, containers e health checks: implementados.
 
 ## Tarefas e Kanban
 
-O Prompt 3 adiciona tarefas com estados `BACKLOG`, `TODO`, `IN_PROGRESS`, `REVIEW` e `DONE`, prioridades, posições persistentes, múltiplos responsáveis, labels, comentários e anexos privados. O progresso do projeto é calculado no backend pela proporção de tarefas concluídas.
+O módulo de tarefas oferece os estados `BACKLOG`, `TODO`, `IN_PROGRESS`, `REVIEW` e `DONE`, prioridades, posições persistentes, múltiplos responsáveis, labels, comentários e anexos privados. O progresso do projeto é calculado no backend pela proporção de tarefas concluídas.
 
 Uploads aceitam PDF, PNG, JPG/JPEG, WEBP, TXT, DOCX e XLSX, com limite de 10 MB e validação de extensão/MIME. Downloads exigem JWT e acesso ao projeto; os arquivos não são expostos por uma rota pública de media.
 
@@ -176,7 +179,7 @@ O backend é a fonte de verdade dos preços. A assinatura SaaS e as faturas de c
 
 ## Horas, financeiro e relatórios
 
-O Prompt 4 adiciona timer com somente um registro ativo por pessoa/workspace, lançamentos manuais, custos e valores de cobrança, receitas, despesas, faturas de clientes, relatórios agrupados e exportação CSV. Faturas de clientes são independentes da assinatura SaaS do DevFlow.
+O módulo de gestão operacional reúne timer com somente um registro ativo por pessoa/workspace, lançamentos manuais, custos e valores de cobrança, receitas, despesas, faturas de clientes, relatórios agrupados e exportação CSV. Faturas de clientes são independentes da assinatura SaaS do DevFlow.
 
 Principais rotas: `/api/time-entries/`, `/api/expenses/`, `/api/revenues/`, `/api/invoices/`, `/api/finance/dashboard/`, `/api/reports/` e `/api/reports/hours/export/`.
 
@@ -194,7 +197,7 @@ O painel permite copiar/abrir o link e gerar novo Pix após expiração. Nenhuma
 
 ## Portal, notificações e assinatura Pro
 
-O Prompt 5 adiciona portal isolado para clientes, convites com token armazenado como hash, entregas com aprovação ou solicitação de alterações, notificações persistentes, preferências, email assíncrono, Redis, Celery worker/beat e WebSocket autenticado por JWT.
+O sistema inclui um portal isolado para clientes, convites com token armazenado como hash, entregas com aprovação ou solicitação de alterações, notificações persistentes, preferências, email assíncrono, Redis, Celery worker/beat e WebSocket autenticado por JWT.
 
 ## Fluxos guiados, conta e equipe
 

@@ -1,4 +1,4 @@
-# Guia Completo de Estudo do Projeto
+# DOCUMENTAÇÃO
 
 ## Como usar este material
 
@@ -12,21 +12,21 @@ O DevFlow é um SaaS multi-tenant para freelancers, agências e equipes pequenas
 
 A stack confirmada pelos arquivos atuais é:
 
-| Camada | Tecnologia | Responsabilidade |
-|---|---|---|
-| Interface | React 19 e TypeScript | Componentes, páginas, formulários e estado visual |
-| Build frontend | Vite 7 | Servidor de desenvolvimento, proxy e bundle de produção |
-| Navegação | React Router 7 | Decide qual página renderizar para cada URL |
-| Estado remoto | TanStack Query | Cache, carregamento e invalidação de dados da API |
-| Formulários | React Hook Form e Zod | Coleta e validação de dados no navegador |
-| HTTP | Axios | Comunicação JSON com a API e renovação do JWT |
-| API | Django 5 e Django REST Framework | Regras de negócio, permissões e serialização |
-| Banco | PostgreSQL 16 | Fonte de verdade dos dados persistentes |
-| Assíncrono | Celery | Emails, lembretes e geração programada de cobranças |
-| Cache/filas/tempo real | Redis 7, opcional localmente | Broker Celery, cache e channel layer |
-| WebSocket | Django Channels e Daphne | Notificações em tempo real autenticadas |
-| Infraestrutura | Docker Compose e Nginx | Containers, rede, TLS, proxy e arquivos estáticos |
-| Pagamentos | Mercado Pago | Pix de faturas e assinatura recorrente do DevFlow |
+| Camada                 | Tecnologia                       | Responsabilidade                                        |
+| ---------------------- | -------------------------------- | ------------------------------------------------------- |
+| Interface              | React 19 e TypeScript            | Componentes, páginas, formulários e estado visual       |
+| Build frontend         | Vite 7                           | Servidor de desenvolvimento, proxy e bundle de produção |
+| Navegação              | React Router 7                   | Decide qual página renderizar para cada URL             |
+| Estado remoto          | TanStack Query                   | Cache, carregamento e invalidação de dados da API       |
+| Formulários            | React Hook Form e Zod            | Coleta e validação de dados no navegador                |
+| HTTP                   | Axios                            | Comunicação JSON com a API e renovação do JWT           |
+| API                    | Django 5 e Django REST Framework | Regras de negócio, permissões e serialização            |
+| Banco                  | PostgreSQL 16                    | Fonte de verdade dos dados persistentes                 |
+| Assíncrono             | Celery                           | Emails, lembretes e geração programada de cobranças     |
+| Cache/filas/tempo real | Redis 7, opcional localmente     | Broker Celery, cache e channel layer                    |
+| WebSocket              | Django Channels e Daphne         | Notificações em tempo real autenticadas                 |
+| Infraestrutura         | Docker Compose e Nginx           | Containers, rede, TLS, proxy e arquivos estáticos       |
+| Pagamentos             | Mercado Pago                     | Pix de faturas e assinatura recorrente do DevFlow       |
 
 ### Mapa de execução
 
@@ -164,7 +164,7 @@ Um **Context** é uma forma de compartilhar dados sem repassar props manualmente
 
 ### Módulos, imports e exports
 
-`import App from './App'` usa um *default export*. Já `import { AuthProvider } ...` usa um *named export*. O primeiro permite escolher o nome local; o segundo precisa usar o nome exportado. Cada arquivo TypeScript é um módulo.
+`import App from './App'` usa um _default export_. Já `import { AuthProvider } ...` usa um _named export_. O primeiro permite escolher o nome local; o segundo precisa usar o nome exportado. Cada arquivo TypeScript é um módulo.
 
 ## Rotas e composição em `App.tsx`
 
@@ -174,34 +174,34 @@ Um **Context** é uma forma de compartilhar dados sem repassar props manualmente
 
 ### Tabela de rotas frontend
 
-| URL | Componente | Proteção/finalidade |
-|---|---|---|
-| `/` | `RootRedirect` | Decide login ou dashboard |
-| `/login` | `LoginPage` | Pública |
-| `/register` | `RegisterPage` | Pública |
-| `/password-reset` | `PasswordResetPage` | Solicitação pública |
-| `/password-reset/confirm` | `PasswordResetConfirmPage` | Confirmação pública |
-| `/pagar/:token` | `PublicPaymentPage` | Pix público por UUID |
-| `/team-invitations/accept` | `TeamInvitationPage` | Aceite de equipe |
-| `/client-invitations/accept` | `AcceptClientInvitation` | Exige login |
-| `/onboarding/workspace` | `WorkspacePage` | Criação do workspace |
-| `/onboarding/plan` | `PlanPage` | Escolha inicial do plano |
-| `/dashboard` | `Dashboard` | Resumo do workspace |
-| `/clients`, `/clients/:id` | `ClientsPage`, `ClientDetail` | Clientes |
-| `/projects`, `/projects/:id` | `ProjectsPage`, `ProjectDetail` | Projetos e Kanban |
-| `/tasks` | `TasksPage` | Lista global permitida |
-| `/time` | `TimeTracking` | Timer e horas |
-| `/finance` | `FinancePage` | Receitas, despesas e faturas |
-| `/reports` | `ReportsPage` | Relatórios |
-| `/team`, `/team/chat` | `TeamPage`, `TeamChatPage` | Gestão e conversa da equipe |
-| `/notifications` | `NotificationsPage` | Caixa de notificações |
-| `/client-portal` | `ClientPortal` | Visão do cliente |
-| `/client-portal/projects/:id` | `ClientProject` | Projeto acessível ao cliente |
-| `/pricing` | `PricingPage` | Planos |
-| `/billing/success`, `/billing/cancel` | `BillingResult` | Retorno do checkout |
-| `/settings/*` | páginas de conta | Perfil, preferências, billing e notificações |
-| `/help` | `HelpPage` | Ajuda |
-| `*` | `NotFoundPage` | URL desconhecida |
+| URL                                   | Componente                      | Proteção/finalidade                          |
+| ------------------------------------- | ------------------------------- | -------------------------------------------- |
+| `/`                                   | `RootRedirect`                  | Decide login ou dashboard                    |
+| `/login`                              | `LoginPage`                     | Pública                                      |
+| `/register`                           | `RegisterPage`                  | Pública                                      |
+| `/password-reset`                     | `PasswordResetPage`             | Solicitação pública                          |
+| `/password-reset/confirm`             | `PasswordResetConfirmPage`      | Confirmação pública                          |
+| `/pagar/:token`                       | `PublicPaymentPage`             | Pix público por UUID                         |
+| `/team-invitations/accept`            | `TeamInvitationPage`            | Aceite de equipe                             |
+| `/client-invitations/accept`          | `AcceptClientInvitation`        | Exige login                                  |
+| `/onboarding/workspace`               | `WorkspacePage`                 | Criação do workspace                         |
+| `/onboarding/plan`                    | `PlanPage`                      | Escolha inicial do plano                     |
+| `/dashboard`                          | `Dashboard`                     | Resumo do workspace                          |
+| `/clients`, `/clients/:id`            | `ClientsPage`, `ClientDetail`   | Clientes                                     |
+| `/projects`, `/projects/:id`          | `ProjectsPage`, `ProjectDetail` | Projetos e Kanban                            |
+| `/tasks`                              | `TasksPage`                     | Lista global permitida                       |
+| `/time`                               | `TimeTracking`                  | Timer e horas                                |
+| `/finance`                            | `FinancePage`                   | Receitas, despesas e faturas                 |
+| `/reports`                            | `ReportsPage`                   | Relatórios                                   |
+| `/team`, `/team/chat`                 | `TeamPage`, `TeamChatPage`      | Gestão e conversa da equipe                  |
+| `/notifications`                      | `NotificationsPage`             | Caixa de notificações                        |
+| `/client-portal`                      | `ClientPortal`                  | Visão do cliente                             |
+| `/client-portal/projects/:id`         | `ClientProject`                 | Projeto acessível ao cliente                 |
+| `/pricing`                            | `PricingPage`                   | Planos                                       |
+| `/billing/success`, `/billing/cancel` | `BillingResult`                 | Retorno do checkout                          |
+| `/settings/*`                         | páginas de conta                | Perfil, preferências, billing e notificações |
+| `/help`                               | `HelpPage`                      | Ajuda                                        |
+| `*`                                   | `NotFoundPage`                  | URL desconhecida                             |
 
 As URLs legadas `/client` e `/client/projects/:id` usam `<Navigate>` para preservar links antigos. `Outlet` em `AppLayout` é o ponto onde a página filha protegida aparece.
 
@@ -294,12 +294,12 @@ Se uma resposta chega com 401, o interceptor usa o refresh uma única vez, salva
 
 ### HTTP e JSON neste projeto
 
-| Método | Uso típico |
-|---|---|
-| GET | Ler listas ou detalhes sem alterar dados |
-| POST | Criar recurso ou executar ação como login/start/stop |
-| PATCH | Alterar parte de um recurso |
-| DELETE | Remover ou desativar um recurso |
+| Método | Uso típico                                           |
+| ------ | ---------------------------------------------------- |
+| GET    | Ler listas ou detalhes sem alterar dados             |
+| POST   | Criar recurso ou executar ação como login/start/stop |
+| PATCH  | Alterar parte de um recurso                          |
+| DELETE | Remover ou desativar um recurso                      |
 
 JSON representa objetos e arrays transmitidos entre frontend e backend. Status 200 indica sucesso de leitura, 201 criação, 400 dados inválidos, 401 falta de identidade válida, 403 identidade sem permissão, 404 recurso não encontrado/visível e 5xx falha do servidor ou integração.
 
@@ -375,19 +375,19 @@ Componentes reutilizáveis reduzem repetição e centralizam acessibilidade e ap
 
 ### Páginas por domínio
 
-| Arquivo | Responsabilidade principal |
-|---|---|
-| `pages/Dashboard.tsx` | métricas e primeiros passos reais |
-| `pages/Clients.tsx` | CRUD e detalhe de clientes |
-| `pages/Projects.tsx` | CRUD, membros, atividades e Kanban |
-| `pages/Tasks.tsx` | tarefas permitidas e filtros |
-| `pages/TimeTracking.tsx` | timer e lançamentos |
-| `pages/Finance.tsx` | despesas, receitas, faturas e Pix |
-| `pages/Reports.tsx` | agregações e exportação |
-| `pages/Team.tsx` | membros, convites, papéis e aprovação |
-| `pages/ClientPortal.tsx` | projetos e entregas do cliente |
-| `pages/PublicPayment.tsx` | cobrança pública somente leitura |
-| `pages/Settings.tsx` | perfil, billing e notificações |
+| Arquivo                   | Responsabilidade principal            |
+| ------------------------- | ------------------------------------- |
+| `pages/Dashboard.tsx`     | métricas e primeiros passos reais     |
+| `pages/Clients.tsx`       | CRUD e detalhe de clientes            |
+| `pages/Projects.tsx`      | CRUD, membros, atividades e Kanban    |
+| `pages/Tasks.tsx`         | tarefas permitidas e filtros          |
+| `pages/TimeTracking.tsx`  | timer e lançamentos                   |
+| `pages/Finance.tsx`       | despesas, receitas, faturas e Pix     |
+| `pages/Reports.tsx`       | agregações e exportação               |
+| `pages/Team.tsx`          | membros, convites, papéis e aprovação |
+| `pages/ClientPortal.tsx`  | projetos e entregas do cliente        |
+| `pages/PublicPayment.tsx` | cobrança pública somente leitura      |
+| `pages/Settings.tsx`      | perfil, billing e notificações        |
 
 ### Perguntas para revisar
 
@@ -446,7 +446,7 @@ Login mobile:   card quase na largura inteira; área institucional reduzida/ocul
 O modo `strict` está ativo. Uma `interface` descreve a forma de um objeto, como `User`, `Project` e `Invoice`. Um `type` também cria tipos e é usado para uniões:
 
 ```ts
-export type TaskStatus = 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
+export type TaskStatus = "BACKLOG" | "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE";
 ```
 
 Isso impede atribuir um status inventado. `PaginatedResponse<T>` é genérico: `T` pode ser `Client`, `Project` ou outro tipo. `field?: string` seria opcional; arrays aparecem como `Task[]`; `boolean`, `number` e `string` tornam os contratos explícitos.
@@ -485,16 +485,16 @@ requisição
 
 ### Endpoints principais confirmados
 
-| Grupo | Rotas |
-|---|---|
-| Conta | `/api/auth/register/`, `login/`, `refresh/`, `logout/`, `me/`, `password-reset/` |
-| Organizações | `/api/organizations/`, `:id/members/`, convites e `team-chat/` |
-| Planos/billing | `/api/plans/`, `/api/subscription/`, `/api/billing/*`, webhook Mercado Pago |
-| Trabalho | `/api/clients/`, `/api/projects/`, `/api/tasks/`, labels, comentários, anexos, dashboard |
-| Financeiro | `/api/time-entries/`, member rates, despesas, receitas, faturas, relatórios |
-| Público | `/api/public/payments/:uuid/` |
-| Portal | notificações, preferências, entregas, convites e `/api/client-portal/*` |
-| Operação | `/health/`, `/health/ready/`, `/admin/` |
+| Grupo          | Rotas                                                                                    |
+| -------------- | ---------------------------------------------------------------------------------------- |
+| Conta          | `/api/auth/register/`, `login/`, `refresh/`, `logout/`, `me/`, `password-reset/`         |
+| Organizações   | `/api/organizations/`, `:id/members/`, convites e `team-chat/`                           |
+| Planos/billing | `/api/plans/`, `/api/subscription/`, `/api/billing/*`, webhook Mercado Pago              |
+| Trabalho       | `/api/clients/`, `/api/projects/`, `/api/tasks/`, labels, comentários, anexos, dashboard |
+| Financeiro     | `/api/time-entries/`, member rates, despesas, receitas, faturas, relatórios              |
+| Público        | `/api/public/payments/:uuid/`                                                            |
+| Portal         | notificações, preferências, entregas, convites e `/api/client-portal/*`                  |
+| Operação       | `/health/`, `/health/ready/`, `/admin/`                                                  |
 
 Os `DefaultRouter` do DRF geram automaticamente listagem, criação, detalhe, atualização e remoção dos ViewSets, além de ações decoradas como start, stop, move e generate-payment.
 
@@ -671,15 +671,15 @@ Uma imagem é um pacote imutável; um container é uma execução da imagem. `Do
 
 ### Serviços Compose
 
-| Serviço | Função | Comunicação |
-|---|---|---|
-| `db` | PostgreSQL | backend/worker |
-| `redis` | cache, broker e Channels | backend/worker/beat |
-| `backend` | API Django | porta 8000 local |
-| `celery_worker` | tarefas assíncronas | banco e Redis |
-| `celery_beat` | agenda periódica | Redis |
-| `frontend` | Vite local ou Nginx em produção | navegador |
-| `nginx` (produção) | TLS e proxy | frontend, backend, WebSocket |
+| Serviço            | Função                          | Comunicação                  |
+| ------------------ | ------------------------------- | ---------------------------- |
+| `db`               | PostgreSQL                      | backend/worker               |
+| `redis`            | cache, broker e Channels        | backend/worker/beat          |
+| `backend`          | API Django                      | porta 8000 local             |
+| `celery_worker`    | tarefas assíncronas             | banco e Redis                |
+| `celery_beat`      | agenda periódica                | Redis                        |
+| `frontend`         | Vite local ou Nginx em produção | navegador                    |
+| `nginx` (produção) | TLS e proxy                     | frontend, backend, WebSocket |
 
 Volumes preservam PostgreSQL, Redis, media e estáticos. `depends_on` com healthcheck ordena inicialização. Na produção, Nginx encaminha `/api` e `/health` ao backend, `/ws` com upgrade WebSocket e demais URLs ao frontend.
 
@@ -705,14 +705,14 @@ Grupos reais:
 
 Vite oferece dev server, HMR (atualização rápida durante edição) e build. O proxy envia `/api` e `/health` para o backend e converte `/ws` para destino WebSocket.
 
-| Comando | Efeito |
-|---|---|
-| `npm run dev` | servidor Vite em desenvolvimento |
-| `npm run build` | checagem TypeScript + bundle minificado em `dist` |
-| `npm test` | testes Vitest |
-| `npm run test:coverage` | testes e relatório V8 |
-| `npm run lint` | ESLint no `src` |
-| `npm run format:check` | verifica Prettier sem modificar |
+| Comando                 | Efeito                                            |
+| ----------------------- | ------------------------------------------------- |
+| `npm run dev`           | servidor Vite em desenvolvimento                  |
+| `npm run build`         | checagem TypeScript + bundle minificado em `dist` |
+| `npm test`              | testes Vitest                                     |
+| `npm run test:coverage` | testes e relatório V8                             |
+| `npm run lint`          | ESLint no `src`                                   |
+| `npm run format:check`  | verifica Prettier sem modificar                   |
 
 ESLint procura problemas de código e padrões inválidos. Prettier padroniza apresentação. Eles se complementam, mas não são a mesma ferramenta.
 
@@ -1012,7 +1012,7 @@ Django passa no check e a tela inicial do Vite abre. Não há funcionalidade Dev
 - executar npm na raiz quando `package.json` fica em `frontend`;
 - escolher versões diferentes sem revisar compatibilidade.
 
-### O que aprendemos nesta etapa
+### Princípio de engenharia
 
 Separar ambientes é uma decisão arquitetural pequena que reduz erros durante todo o projeto.
 
@@ -1242,7 +1242,7 @@ Montar uma SPA navegável antes de preencher páginas complexas.
 Comece pequeno:
 
 ```tsx
-createRoot(document.getElementById('root')!).render(<App />);
+createRoot(document.getElementById("root")!).render(<App />);
 ```
 
 Confirme a renderização. Depois adicione, um por vez, `BrowserRouter`, Query Client, autenticação, idioma/toast e `ErrorBoundary`. Se tudo for adicionado de uma vez, um erro de provider fica difícil de isolar.
@@ -1253,7 +1253,14 @@ Confirme a renderização. Depois adicione, um por vez, `BrowserRouter`, Query C
 
 ```tsx
 function AppLayout() {
-  return <div className="shell"><aside /><main><Outlet /></main></div>;
+  return (
+    <div className="shell">
+      <aside />
+      <main>
+        <Outlet />
+      </main>
+    </div>
+  );
 }
 ```
 
@@ -1354,13 +1361,16 @@ Confirme `GET /api/projects/` autenticado.
 **3. Crie o cliente**
 
 ```ts
-export const api = axios.create({ baseURL: import.meta.env.VITE_API_URL ?? '/api' });
+export const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL ?? "/api",
+});
 ```
 
 **4. Crie o service tipado**
 
 ```ts
-list: () => api.get<PaginatedResponse<Project>>('/projects/').then(r => r.data)
+list: () =>
+  api.get<PaginatedResponse<Project>>("/projects/").then((r) => r.data);
 ```
 
 **5. Encapsule em hook**
@@ -1601,15 +1611,15 @@ Transformar o ambiente de desenvolvimento em uma entrega reproduzível e segura.
 
 ### Mudanças reais de contexto
 
-| Desenvolvimento | Produção |
-|---|---|
-| `DEBUG=True` | `DEBUG=False` |
-| localhost | domínio HTTPS |
-| Vite dev/HMR | bundle `dist` servido por Nginx/CDN |
-| HTTP/`ws://` local | HTTPS/`wss://` quando WebSocket existir |
-| console email | SMTP configurado |
+| Desenvolvimento                | Produção                                           |
+| ------------------------------ | -------------------------------------------------- |
+| `DEBUG=True`                   | `DEBUG=False`                                      |
+| localhost                      | domínio HTTPS                                      |
+| Vite dev/HMR                   | bundle `dist` servido por Nginx/CDN                |
+| HTTP/`ws://` local             | HTTPS/`wss://` quando WebSocket existir            |
+| console email                  | SMTP configurado                                   |
 | fallbacks em memória possíveis | PostgreSQL/Redis compartilhados conforme topologia |
-| secrets no `.env` local | secret manager ou `.env.production` fora do Git |
+| secrets no `.env` local        | secret manager ou `.env.production` fora do Git    |
 
 ### Caminho Git
 
@@ -1673,18 +1683,18 @@ observar sintoma
 
 ## Decisões que guiam a reconstrução
 
-| Decisão | Por que faz sentido no DevFlow |
-|---|---|
-| Componente | reutiliza aparência/comportamento como cards e inputs |
-| Hook customizado | reúne Query, mutation e invalidação de um domínio |
-| Service | isola detalhes HTTP da interface |
-| Context | compartilha sessão, idioma e toast por toda a árvore |
-| API | permite frontend e tarefas externas consumirem regras centrais |
-| Banco | preserva relações e transações entre acessos/processos |
-| Redis | coordena processos e reduz latência; não substitui PostgreSQL |
-| Docker | torna dependências e execução reproduzíveis |
-| Variável de ambiente | separa configuração/segredo do código |
-| Build | converte TypeScript/JSX e otimiza assets para navegador |
+| Decisão              | Por que faz sentido no DevFlow                                 |
+| -------------------- | -------------------------------------------------------------- |
+| Componente           | reutiliza aparência/comportamento como cards e inputs          |
+| Hook customizado     | reúne Query, mutation e invalidação de um domínio              |
+| Service              | isola detalhes HTTP da interface                               |
+| Context              | compartilha sessão, idioma e toast por toda a árvore           |
+| API                  | permite frontend e tarefas externas consumirem regras centrais |
+| Banco                | preserva relações e transações entre acessos/processos         |
+| Redis                | coordena processos e reduz latência; não substitui PostgreSQL  |
+| Docker               | torna dependências e execução reproduzíveis                    |
+| Variável de ambiente | separa configuração/segredo do código                          |
+| Build                | converte TypeScript/JSX e otimiza assets para navegador        |
 
 # Desafio: reconstruir o projeto
 
