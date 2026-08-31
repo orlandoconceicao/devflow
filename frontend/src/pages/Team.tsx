@@ -1,4 +1,4 @@
-import { Copy, Plus, Trash2 } from 'lucide-react';
+import { Copy, MessageCircle, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button, EmptyState, Input, LoadingState, Select } from '../components/ui';
 import { organizationService } from '../services/work';
@@ -37,7 +37,7 @@ export function TeamPage() {
     );
   return (
     <>
-      <div className="page-head">
+      <div className="page-head team-page-head">
         <div>
           <h1>Equipe</h1>
           <p>
@@ -46,12 +46,10 @@ export function TeamPage() {
           </p>
         </div>
         <div className="actions">
-          <Link className="button secondary" to="/team/chat">
+          <Link className="button team-chat-button" to="/team/chat">
+            <MessageCircle size={18} strokeWidth={2} aria-hidden="true" />
             Chat da equipe
           </Link>
-          <Button onClick={() => setOpen(true)}>
-            <Plus size={18} /> Convidar membro
-          </Button>
         </div>
       </div>
       {error && <div className="form-error">{error}</div>}

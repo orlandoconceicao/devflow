@@ -108,3 +108,23 @@ tests/reports/latest-report.json
 ```
 
 Os arquivos são temporários e ignorados pelo Git. O JSON contém totais, status e resultado por etapa, adequado para futura integração com CI/CD.
+
+## Cobertura e CI
+
+Para medir a cobertura local:
+
+```powershell
+.\.venv\Scripts\python.exe -m coverage run --rcfile=pyproject.toml backend\manage.py test apps
+.\.venv\Scripts\python.exe -m coverage report --rcfile=pyproject.toml
+npm --prefix frontend run test:coverage
+```
+
+O backend exige no mínimo 80% de cobertura global. O frontend possui limites iniciais
+de 10% para statements, 8% para branches, 4% para functions e 12% para lines. Esses
+limites representam a linha de base global atual e devem subir progressivamente;
+arquivos sem cobertura continuam visíveis no relatório.
+
+O workflow `.github/workflows/ci.yml` executa lint, checks e testes Django com cobertura,
+testes Vitest com cobertura, build de produção, auditorias de dependências, testes
+transversais e build dos containers. Os relatórios de cobertura ficam disponíveis como
+artefatos de cada execução.

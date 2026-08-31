@@ -14,7 +14,9 @@ describe('Equipe', () => {
     service.members.mockResolvedValue({count:1,next:null,previous:null,results:[{id:1,user:{id:1,email:'owner@acme.test',first_name:'Ana',last_name:'Owner',avatar:null,bio:'',language:'pt-BR',timezone:'America/Cuiaba',theme:'system',pending_workspace_approval:false},role:'OWNER',is_active:true,approval_status:'APPROVED',joined_at:'2026-01-01'}]});
     service.invitations.mockResolvedValue([]);
     render(<MemoryRouter><TeamPage/></MemoryRouter>);
-    expect(await screen.findByRole('button',{name:/Convidar membro/})).toBeInTheDocument();
+    const chatLink = await screen.findByRole('link',{name:/Chat da equipe/});
+    expect(chatLink).toHaveAttribute('href', '/team/chat');
+    expect(screen.queryByRole('button',{name:/Convidar membro/})).not.toBeInTheDocument();
     expect(screen.getByText('owner@acme.test')).toBeInTheDocument();
   });
   it('Member não visualiza gestão da equipe', async () => {

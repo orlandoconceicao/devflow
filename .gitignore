@@ -1,30 +1,79 @@
+# Environment / secrets
 .env
+.env.*
+!.env.example
+!.env.production.example
+.envrc
+deploy/certs/
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
+secrets*.json
+
+# Python
+.venv/
 venv/
 **/__pycache__/
 *.py[cod]
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+
+# Django / Celery local data
+backend/media/
+backend/staticfiles/
+backend/celerybeat-schedule*
+
+# Node / frontend
 node_modules/
+.vite/
+.vercel/
+.eslintcache
+*.tsbuildinfo
+
+# Build artifacts
 dist/
 build/
-coverage/
+
+# Tests / coverage
 .coverage
+.coverage.*
+coverage/
+coverage*.xml
+coverage*.json
 htmlcov/
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
+.nyc_output/
+tests/reports/latest-report.*
+
+# Tool caches
 .cache/
-.vite/
-*.tsbuildinfo
-*.sqlite3
+
+# Logs / process files
 *.log
+*.pid
+
+# Database / local backups
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.sql.gz
+
+# IDE / editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Operating system
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Temporary files
 *.tmp
 *.bak
 *.old
-tests/reports/latest-report.*
-backend/media/
-backend/celerybeat-schedule*
-.env.production
-deploy/certs/
-.DS_Store
-.idea/
-.vscode/*
-!.vscode/settings.json

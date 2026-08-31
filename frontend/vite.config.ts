@@ -6,6 +6,17 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json-summary', 'lcov'],
+      reportsDirectory: './coverage',
+      thresholds: {
+        statements: 10,
+        branches: 8,
+        functions: 4,
+        lines: 12,
+      },
+    },
   },
   server: {
     host: '0.0.0.0',

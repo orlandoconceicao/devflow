@@ -1060,6 +1060,88 @@ td {
   color: #6b7280;
   padding: 4px;
 }
+.actions .team-chat-button {
+  min-height: 44px;
+  padding: 11px 18px;
+  gap: 9px;
+  border: 1px solid #5558dc;
+  border-radius: 10px;
+  background: #6366f1;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  box-shadow: 0 1px 2px rgb(17 24 39 / 10%);
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+.team-chat-button svg {
+  flex: 0 0 auto;
+  color: currentColor;
+  transition: transform 160ms ease;
+}
+.actions .team-chat-button:hover {
+  border-color: #4547c7;
+  background: #5558dc;
+  color: #fff;
+  box-shadow: 0 3px 8px rgb(79 70 229 / 18%);
+  transform: translateY(-1px);
+}
+.team-chat-button:hover svg {
+  transform: translateX(1px);
+}
+.actions .team-chat-button:focus-visible {
+  outline: 3px solid rgb(99 102 241 / 22%);
+  outline-offset: 2px;
+  border-color: #4338ca;
+}
+.actions .team-chat-button:active {
+  border-color: #3f41ba;
+  background: #4b4ecf;
+  box-shadow: inset 0 1px 2px rgb(17 24 39 / 8%);
+  transform: translateY(0);
+}
+[data-theme='dark'] .actions .team-chat-button {
+  border-color: #7779ed;
+  background: #696ce4;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 24%);
+}
+[data-theme='dark'] .actions .team-chat-button:hover {
+  border-color: #8587f1;
+  background: #7477e9;
+  color: #fff;
+}
+@media (prefers-color-scheme: dark) {
+  [data-theme='system'] .actions .team-chat-button {
+    border-color: #7779ed;
+    background: #696ce4;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 24%);
+  }
+  [data-theme='system'] .actions .team-chat-button:hover {
+    border-color: #8587f1;
+    background: #7477e9;
+    color: #fff;
+  }
+}
+@media (max-width: 650px) {
+  .team-page-head {
+    flex-direction: column;
+    gap: 18px;
+  }
+  .team-page-head .actions,
+  .team-page-head .team-chat-button {
+    width: 100%;
+  }
+  .team-page-head .team-chat-button {
+    display: inline-flex;
+  }
+}
 .status,
 .priority {
   display: inline-flex;

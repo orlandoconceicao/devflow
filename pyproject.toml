@@ -19,4 +19,4 @@ omit = ["*/migrations/*", "*/tests.py", "*/admin.py"]
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 55
+fail_under = 80

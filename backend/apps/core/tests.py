@@ -97,6 +97,47 @@ class OptionalRedisConfigurationTests(SimpleTestCase):
         self.assertTrue(values["eager"])
 
 
+class DatabaseConfigurationTests(SimpleTestCase):
+    def test_individual_database_variables_are_supported_without_database_url(self):
+        backend = Path(__file__).resolve().parents[2]
+        script = (
+            "import json, django; django.setup(); from django.conf import settings; "
+            "database = settings.DATABASES['default']; "
+            "print(json.dumps({key: database[key] for key in "
+            "['NAME', 'USER', 'PASSWORD', 'HOST', 'PORT']}))"
+        )
+        environment = {
+            **os.environ,
+            "DJANGO_SETTINGS_MODULE": "config.settings",
+            "DEBUG": "True",
+            "DB_NAME": "configured_name",
+            "DB_USER": "configured_user",
+            "DB_PASSWORD": "configured_password",
+            "DB_HOST": "configured_host",
+            "DB_PORT": "5544",
+        }
+        environment.pop("DATABASE_URL", None)
+        result = subprocess.run(
+            [sys.executable, "-c", script],
+            cwd=backend,
+            env=environment,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        self.assertEqual(
+            json.loads(result.stdout),
+            {
+                "NAME": "configured_name",
+                "USER": "configured_user",
+                "PASSWORD": "configured_password",
+                "HOST": "configured_host",
+                "PORT": "5544",
+            },
+        )
+
+
 class DevFlowAPITests(APITestCase):
     @classmethod
     def setUpTestData(cls):

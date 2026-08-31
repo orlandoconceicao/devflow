@@ -35,9 +35,16 @@ jobs:
         with: { python-version: "3.13", cache: pip }
       - run: pip install -r requirements-dev.txt
       - run: ruff check backend
+      - run: python backend/manage.py check
       - run: python backend/manage.py makemigrations --check --dry-run
-      - run: coverage run backend/manage.py test
-      - run: coverage report --fail-under=55
+      - run: coverage run backend/manage.py test apps
+      - run: coverage report --fail-under=80
+      - run: coverage xml -o coverage-backend.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage
+          path: coverage-backend.xml
       - run: pip-audit -r backend/requirements.txt
   frontend:
     runs-on: ubuntu-latest
@@ -53,8 +60,21 @@ jobs:
           }
       - run: npm ci
       - run: npm run lint
+      - run: npm run test:coverage
       - run: npm run build
       - run: npm audit --audit-level=high
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage
+          path: frontend/coverage
+  transversal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13" }
+      - run: python -m unittest discover -s tests -t . -v
   docker:
     runs-on: ubuntu-latest
     steps:

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CORE_ROUTE_PATHS } from './App';
+import { CORE_ROUTE_PATHS, rootPathFor } from './App';
 import routerSource from './App.tsx?raw';
 
 describe('core application routes', () => {
@@ -26,7 +26,8 @@ describe('core application routes', () => {
   });
 
   it('routes the root according to authentication state', () => {
-    expect(routerSource).toContain("isAuthenticated ? '/dashboard' : '/login'");
     expect(routerSource).toContain('path="/" element={<RootRedirect />}');
+    expect(rootPathFor(true)).toBe('/dashboard');
+    expect(rootPathFor(false)).toBe('/login');
   });
 });

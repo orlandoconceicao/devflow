@@ -31,11 +31,14 @@ function Protected() {
   if (isLoading) return <LoadingState />;
   return isAuthenticated ? <AppLayout /> : <Navigate to="/login" replace />;
 }
-function RootRedirect() {
+export function RootRedirect() {
   const { isAuthenticated, isLoading } = useAuth();
   if (isLoading) return <LoadingState />;
-  return <Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />;
+  return <Navigate to={rootPathFor(isAuthenticated)} replace />;
 }
+
+export const rootPathFor = (isAuthenticated: boolean) =>
+  isAuthenticated ? '/dashboard' : '/login';
 function ProtectedPage({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();

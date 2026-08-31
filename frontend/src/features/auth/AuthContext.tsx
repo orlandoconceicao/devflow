@@ -73,6 +73,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const refresh = localStorage.getItem('refresh');
     try {
       if (refresh) await api.post('/auth/logout/', { refresh });
+    } catch {
+      // Local logout must still complete if the token is expired or the API is offline.
     } finally {
       clearAuthStorage();
       setUser(null);
