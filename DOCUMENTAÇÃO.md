@@ -558,12 +558,12 @@ Esta seção é o mapa para estudar cada domínio sem confundir responsabilidade
 
 Papéis reais de `OrganizationMembership.Role`:
 
-| Papel | Significado operacional |
-| --- | --- |
-| `OWNER` | proprietário; administra workspace, equipe e billing |
-| `ADMIN` | gestão operacional ampla, sem substituir garantias exclusivas do owner |
-| `MEMBER` | trabalha nos projetos aos quais tem acesso |
-| `CLIENT` | acesso orientado ao portal e aos projetos do cliente |
+| Papel    | Significado operacional                                                |
+| -------- | ---------------------------------------------------------------------- |
+| `OWNER`  | proprietário; administra workspace, equipe e billing                   |
+| `ADMIN`  | gestão operacional ampla, sem substituir garantias exclusivas do owner |
+| `MEMBER` | trabalha nos projetos aos quais tem acesso                             |
+| `CLIENT` | acesso orientado ao portal e aos projetos do cliente                   |
 
 ### `subscriptions`: plano e cobrança do SaaS
 
@@ -614,81 +614,81 @@ Papéis reais de `OrganizationMembership.Role`:
 
 ### Funções e classes centrais para leitura dirigida
 
-| Símbolo | Arquivo | Entrada → retorno | Chamado por / responsabilidade |
-| --- | --- | --- | --- |
-| `current_membership(request)` | `backend/apps/work/context.py` | request → membership ou erro | ViewSets tenant; valida header, usuário, atividade e aprovação |
-| `create_organization(*, user, name)` | `backend/apps/organizations/services.py` | usuário/nome → organização | serializer de organização; cria o tenant completo em transação |
-| `SubscriptionPolicy` | `backend/apps/subscriptions/policy.py` | organização → limites/booleanos | criação de projetos e convites; aplica plano atual |
-| `TaskViewSet.base_queryset_for()` | `backend/apps/work/views.py` | request → QuerySet | todas as operações de tarefa; evita IDOR |
-| `normalize_positions()` | `backend/apps/work/services.py` | projeto/status → `None` | movimento/exclusão; recompõe a ordem do Kanban |
-| `generate_pix()` | `backend/apps/finance/payments.py` | invoice/opções → pagamento | ação `generate-payment` e rotina agendada |
-| `process_mercado_pago_payment()` | `backend/apps/finance/payments.py` | payload/event id → pagamento | webhook; confirma e aplica pagamento uma vez |
-| `NotificationService.create()` | `backend/apps/portal/services.py` | dados da notificação → model | módulos de negócio; persiste, publica e agenda email |
-| `NotificationConsumer` | `backend/apps/portal/consumers.py` | conexão/eventos WS | ASGI; entrega JSON apenas ao usuário do grupo |
-| `api_exception_handler()` | `backend/apps/core/exceptions.py` | exceção/contexto → Response | DRF global; padroniza erros sem esconder status |
+| Símbolo                              | Arquivo                                  | Entrada → retorno               | Chamado por / responsabilidade                                 |
+| ------------------------------------ | ---------------------------------------- | ------------------------------- | -------------------------------------------------------------- |
+| `current_membership(request)`        | `backend/apps/work/context.py`           | request → membership ou erro    | ViewSets tenant; valida header, usuário, atividade e aprovação |
+| `create_organization(*, user, name)` | `backend/apps/organizations/services.py` | usuário/nome → organização      | serializer de organização; cria o tenant completo em transação |
+| `SubscriptionPolicy`                 | `backend/apps/subscriptions/policy.py`   | organização → limites/booleanos | criação de projetos e convites; aplica plano atual             |
+| `TaskViewSet.base_queryset_for()`    | `backend/apps/work/views.py`             | request → QuerySet              | todas as operações de tarefa; evita IDOR                       |
+| `normalize_positions()`              | `backend/apps/work/services.py`          | projeto/status → `None`         | movimento/exclusão; recompõe a ordem do Kanban                 |
+| `generate_pix()`                     | `backend/apps/finance/payments.py`       | invoice/opções → pagamento      | ação `generate-payment` e rotina agendada                      |
+| `process_mercado_pago_payment()`     | `backend/apps/finance/payments.py`       | payload/event id → pagamento    | webhook; confirma e aplica pagamento uma vez                   |
+| `NotificationService.create()`       | `backend/apps/portal/services.py`        | dados da notificação → model    | módulos de negócio; persiste, publica e agenda email           |
+| `NotificationConsumer`               | `backend/apps/portal/consumers.py`       | conexão/eventos WS              | ASGI; entrega JSON apenas ao usuário do grupo                  |
+| `api_exception_handler()`            | `backend/apps/core/exceptions.py`        | exceção/contexto → Response     | DRF global; padroniza erros sem esconder status                |
 
 ## Referência completa da API
 
 Prefixos abaixo são relativos ao host do backend. Recursos de ViewSet também aceitam `GET /:id/`, `PATCH /:id/` e `DELETE /:id/` quando o ViewSet não restringe o método.
 
-| Método | Endpoint | Auth/contexto | View responsável | Finalidade |
-| --- | --- | --- | --- | --- |
-| GET | `/health/` | pública | `core.views.health` | liveness do processo |
-| GET | `/health/ready/` | pública | `core.views.ready` | readiness incluindo banco |
-| POST | `/api/auth/register/` | pública/throttle auth | `RegisterView` | criar usuário |
-| POST | `/api/auth/login/` | pública/throttle auth | `LoginView` | emitir JWT e usuário |
-| POST | `/api/auth/refresh/` | refresh JWT | `TokenRefreshView` | rotacionar tokens |
-| POST | `/api/auth/logout/` | JWT | `LogoutView` | invalidar refresh |
-| GET/PATCH | `/api/auth/me/` | JWT | `MeView` + `UserSerializer` | perfil e preferências |
-| POST | `/api/auth/password-reset/` | pública | `PasswordResetView` | solicitar recuperação |
-| POST | `/api/auth/password-reset/confirm/` | UID/token | `PasswordResetConfirmView` | definir nova senha |
-| GET/POST | `/api/organizations/` | JWT | `OrganizationListCreateView` | listar/criar workspaces |
-| GET/PATCH | `/api/organizations/:id/` | membro/owner | `OrganizationDetailView` | consultar/renomear workspace |
-| GET | `/api/organizations/:id/members/` | membro | `OrganizationMembersView` | listar equipe |
-| POST/PATCH/DELETE | `/api/organizations/:id/members/:membership_id/` | owner | `OrganizationMemberDetailView` | aprovar, trocar papel ou desativar acesso |
-| GET/POST | `/api/organizations/:id/team-invitations/` | owner | `TeamInvitationCreateView` | listar/criar convites |
-| DELETE | `/api/organizations/:id/team-invitations/:invitation_id/` | owner | `TeamInvitationCancelView` | cancelar convite |
-| GET | `/api/organizations/team-invitations/:token/` | pública por token | `TeamInvitationDetailView` | inspecionar convite válido |
-| POST | `/api/organizations/team-invitations/accept/` | pública; token e dados no JSON | `TeamInvitationAcceptView` | aceitar convite e preparar login |
-| GET/POST | `/api/organizations/team-chat/` | JWT + tenant | `TeamMessageListCreateView` | histórico/enviar mensagem |
-| GET | `/api/plans/` | pública | `PlanListView` | catálogo ativo |
-| GET | `/api/subscription/` | JWT + tenant | `SubscriptionView` | assinatura atual |
-| GET | `/api/billing/subscription/`, `usage/`, `payments/` | owner | funções de billing | visão administrativa |
-| POST | `/api/billing/checkout/`, `cancel/` | owner | `checkout`, `cancel` | iniciar/cancelar assinatura |
-| POST | `/api/webhooks/mercado-pago/` | assinatura do provedor | `mercado_pago_webhook` | sincronizar billing SaaS |
-| GET/POST | `/api/clients/` | JWT + tenant | `ClientViewSet` + `ClientSerializer` | CRUD de clientes |
-| POST | `/api/clients/:id/invite/` | gestor | `portal.views.invite_client` | convidar cliente ao portal |
-| GET/POST | `/api/projects/` | JWT + tenant | `ProjectViewSet` + `ProjectSerializer` | CRUD de projetos |
-| GET/POST | `/api/projects/:id/members/` | acesso ao projeto | `members_action` | listar/adicionar membros |
-| DELETE | `/api/projects/:id/members/:membership_id/` | gestor | `remove_member` | remover membro |
-| GET | `/api/projects/:id/activities/`, `tasks/` | acesso ao projeto | ações de `ProjectViewSet` | auditoria e tarefas |
-| GET/POST | `/api/tasks/` | JWT + tenant/projeto | `TaskViewSet` | CRUD de tarefas |
-| PATCH | `/api/tasks/:id/move/` | acesso de edição | `TaskViewSet.move` | status/posição do Kanban |
-| GET/POST | `/api/tasks/:id/comments/`, `attachments/` | acesso à tarefa | ações de `TaskViewSet` | colaboração e arquivos |
-| GET | `/api/tasks/:id/activities/` | acesso à tarefa | `TaskViewSet.activities` | histórico da tarefa |
-| GET/POST | `/api/task-labels/` | JWT + tenant | `TaskLabelViewSet` | labels da organização |
-| PATCH/DELETE | `/api/task-comments/:id/` | autor/acesso | `TaskCommentViewSet` | editar/remover comentário |
-| GET/DELETE | `/api/task-attachments/:id/` | acesso | `TaskAttachmentViewSet` | baixar/remover anexo |
-| GET | `/api/dashboard/` | JWT + tenant | `work.views.dashboard` | agregados da home |
-| GET/POST | `/api/time-entries/` | JWT + tenant | `TimeEntryViewSet` | lançamentos de horas |
-| POST/GET | `/api/time-entries/start/`, `active/` | JWT + tenant | ações do timer | iniciar/consultar timer |
-| POST/GET | `/api/time-entries/:id/stop/`, `summary/` | JWT + tenant | ações do timer | parar/agregar horas |
-| CRUD | `/api/member-rates/`, `expenses/`, `revenues/` | staff do workspace | ViewSets financeiros | custo, despesa e receita |
-| CRUD | `/api/invoices/` | staff do workspace | `InvoiceViewSet` | faturas e itens |
-| POST | `/api/invoices/:id/send/`, `mark-paid/`, `cancel/` | staff | ações da fatura | transições administrativas |
-| POST | `/api/invoices/:id/generate-payment/` | staff | `generate_payment` | criar/regenerar Pix |
-| GET | `/api/public/payments/:token/` | pública por UUID | `public_payment` | consultar cobrança sem JWT |
-| GET | `/api/finance/dashboard/`, `/api/reports/` | JWT + tenant | funções financeiras | indicadores e relatórios |
-| GET | `/api/reports/hours/export/` | JWT + tenant | `export_hours` | exportar CSV |
-| GET | `/api/notifications/` | JWT | `NotificationViewSet` | caixa do usuário |
-| GET/POST | `/api/notifications/unread-count/`, `read-all/` | JWT | ações de notificação | contagem/marcar todas |
-| POST | `/api/notifications/:id/read/` | dono | `read` | marcar uma como lida |
-| GET/PATCH | `/api/notification-preferences/` | JWT | `NotificationPreferenceView` | canais habilitados |
-| CRUD | `/api/deliverables/` | equipe/cliente autorizado | `DeliverableViewSet` | entregas do projeto |
-| POST | `/api/deliverables/:id/approve/`, `request-changes/` | cliente autorizado | ações de entrega | decisão do cliente |
-| POST | `/api/deliverables/:id/comments/`, `attachments/` | acesso à entrega | ações de entrega | colaboração |
-| POST | `/api/client-invitations/accept/` | JWT + token | `accept_invitation` | criar acesso do cliente |
-| GET | `/api/client-portal/dashboard/`, `projects/` | cliente | portal views | dados isolados do portal |
+| Método            | Endpoint                                                  | Auth/contexto                  | View responsável                       | Finalidade                                |
+| ----------------- | --------------------------------------------------------- | ------------------------------ | -------------------------------------- | ----------------------------------------- |
+| GET               | `/health/`                                                | pública                        | `core.views.health`                    | liveness do processo                      |
+| GET               | `/health/ready/`                                          | pública                        | `core.views.ready`                     | readiness incluindo banco                 |
+| POST              | `/api/auth/register/`                                     | pública/throttle auth          | `RegisterView`                         | criar usuário                             |
+| POST              | `/api/auth/login/`                                        | pública/throttle auth          | `LoginView`                            | emitir JWT e usuário                      |
+| POST              | `/api/auth/refresh/`                                      | refresh JWT                    | `TokenRefreshView`                     | rotacionar tokens                         |
+| POST              | `/api/auth/logout/`                                       | JWT                            | `LogoutView`                           | invalidar refresh                         |
+| GET/PATCH         | `/api/auth/me/`                                           | JWT                            | `MeView` + `UserSerializer`            | perfil e preferências                     |
+| POST              | `/api/auth/password-reset/`                               | pública                        | `PasswordResetView`                    | solicitar recuperação                     |
+| POST              | `/api/auth/password-reset/confirm/`                       | UID/token                      | `PasswordResetConfirmView`             | definir nova senha                        |
+| GET/POST          | `/api/organizations/`                                     | JWT                            | `OrganizationListCreateView`           | listar/criar workspaces                   |
+| GET/PATCH         | `/api/organizations/:id/`                                 | membro/owner                   | `OrganizationDetailView`               | consultar/renomear workspace              |
+| GET               | `/api/organizations/:id/members/`                         | membro                         | `OrganizationMembersView`              | listar equipe                             |
+| POST/PATCH/DELETE | `/api/organizations/:id/members/:membership_id/`          | owner                          | `OrganizationMemberDetailView`         | aprovar, trocar papel ou desativar acesso |
+| GET/POST          | `/api/organizations/:id/team-invitations/`                | owner                          | `TeamInvitationCreateView`             | listar/criar convites                     |
+| DELETE            | `/api/organizations/:id/team-invitations/:invitation_id/` | owner                          | `TeamInvitationCancelView`             | cancelar convite                          |
+| GET               | `/api/organizations/team-invitations/:token/`             | pública por token              | `TeamInvitationDetailView`             | inspecionar convite válido                |
+| POST              | `/api/organizations/team-invitations/accept/`             | pública; token e dados no JSON | `TeamInvitationAcceptView`             | aceitar convite e preparar login          |
+| GET/POST          | `/api/organizations/team-chat/`                           | JWT + tenant                   | `TeamMessageListCreateView`            | histórico/enviar mensagem                 |
+| GET               | `/api/plans/`                                             | pública                        | `PlanListView`                         | catálogo ativo                            |
+| GET               | `/api/subscription/`                                      | JWT + tenant                   | `SubscriptionView`                     | assinatura atual                          |
+| GET               | `/api/billing/subscription/`, `usage/`, `payments/`       | owner                          | funções de billing                     | visão administrativa                      |
+| POST              | `/api/billing/checkout/`, `cancel/`                       | owner                          | `checkout`, `cancel`                   | iniciar/cancelar assinatura               |
+| POST              | `/api/webhooks/mercado-pago/`                             | assinatura do provedor         | `mercado_pago_webhook`                 | sincronizar billing SaaS                  |
+| GET/POST          | `/api/clients/`                                           | JWT + tenant                   | `ClientViewSet` + `ClientSerializer`   | CRUD de clientes                          |
+| POST              | `/api/clients/:id/invite/`                                | gestor                         | `portal.views.invite_client`           | convidar cliente ao portal                |
+| GET/POST          | `/api/projects/`                                          | JWT + tenant                   | `ProjectViewSet` + `ProjectSerializer` | CRUD de projetos                          |
+| GET/POST          | `/api/projects/:id/members/`                              | acesso ao projeto              | `members_action`                       | listar/adicionar membros                  |
+| DELETE            | `/api/projects/:id/members/:membership_id/`               | gestor                         | `remove_member`                        | remover membro                            |
+| GET               | `/api/projects/:id/activities/`, `tasks/`                 | acesso ao projeto              | ações de `ProjectViewSet`              | auditoria e tarefas                       |
+| GET/POST          | `/api/tasks/`                                             | JWT + tenant/projeto           | `TaskViewSet`                          | CRUD de tarefas                           |
+| PATCH             | `/api/tasks/:id/move/`                                    | acesso de edição               | `TaskViewSet.move`                     | status/posição do Kanban                  |
+| GET/POST          | `/api/tasks/:id/comments/`, `attachments/`                | acesso à tarefa                | ações de `TaskViewSet`                 | colaboração e arquivos                    |
+| GET               | `/api/tasks/:id/activities/`                              | acesso à tarefa                | `TaskViewSet.activities`               | histórico da tarefa                       |
+| GET/POST          | `/api/task-labels/`                                       | JWT + tenant                   | `TaskLabelViewSet`                     | labels da organização                     |
+| PATCH/DELETE      | `/api/task-comments/:id/`                                 | autor/acesso                   | `TaskCommentViewSet`                   | editar/remover comentário                 |
+| GET/DELETE        | `/api/task-attachments/:id/`                              | acesso                         | `TaskAttachmentViewSet`                | baixar/remover anexo                      |
+| GET               | `/api/dashboard/`                                         | JWT + tenant                   | `work.views.dashboard`                 | agregados da home                         |
+| GET/POST          | `/api/time-entries/`                                      | JWT + tenant                   | `TimeEntryViewSet`                     | lançamentos de horas                      |
+| POST/GET          | `/api/time-entries/start/`, `active/`                     | JWT + tenant                   | ações do timer                         | iniciar/consultar timer                   |
+| POST/GET          | `/api/time-entries/:id/stop/`, `summary/`                 | JWT + tenant                   | ações do timer                         | parar/agregar horas                       |
+| CRUD              | `/api/member-rates/`, `expenses/`, `revenues/`            | staff do workspace             | ViewSets financeiros                   | custo, despesa e receita                  |
+| CRUD              | `/api/invoices/`                                          | staff do workspace             | `InvoiceViewSet`                       | faturas e itens                           |
+| POST              | `/api/invoices/:id/send/`, `mark-paid/`, `cancel/`        | staff                          | ações da fatura                        | transições administrativas                |
+| POST              | `/api/invoices/:id/generate-payment/`                     | staff                          | `generate_payment`                     | criar/regenerar Pix                       |
+| GET               | `/api/public/payments/:token/`                            | pública por UUID               | `public_payment`                       | consultar cobrança sem JWT                |
+| GET               | `/api/finance/dashboard/`, `/api/reports/`                | JWT + tenant                   | funções financeiras                    | indicadores e relatórios                  |
+| GET               | `/api/reports/hours/export/`                              | JWT + tenant                   | `export_hours`                         | exportar CSV                              |
+| GET               | `/api/notifications/`                                     | JWT                            | `NotificationViewSet`                  | caixa do usuário                          |
+| GET/POST          | `/api/notifications/unread-count/`, `read-all/`           | JWT                            | ações de notificação                   | contagem/marcar todas                     |
+| POST              | `/api/notifications/:id/read/`                            | dono                           | `read`                                 | marcar uma como lida                      |
+| GET/PATCH         | `/api/notification-preferences/`                          | JWT                            | `NotificationPreferenceView`           | canais habilitados                        |
+| CRUD              | `/api/deliverables/`                                      | equipe/cliente autorizado      | `DeliverableViewSet`                   | entregas do projeto                       |
+| POST              | `/api/deliverables/:id/approve/`, `request-changes/`      | cliente autorizado             | ações de entrega                       | decisão do cliente                        |
+| POST              | `/api/deliverables/:id/comments/`, `attachments/`         | acesso à entrega               | ações de entrega                       | colaboração                               |
+| POST              | `/api/client-invitations/accept/`                         | JWT + token                    | `accept_invitation`                    | criar acesso do cliente                   |
+| GET               | `/api/client-portal/dashboard/`, `projects/`              | cliente                        | portal views                           | dados isolados do portal                  |
 
 ### Como ler um endpoint gerado pelo router
 
@@ -741,42 +741,42 @@ Principais models por arquivo:
 
 As tabelas resumem os campos de domínio; todos os models recebem ainda a chave primária automática `id` quando não declaram outra. `blank=True` afeta validação de formulários/serializers; `null=True` permite `NULL` no banco. Datas `auto_now_add` registram criação e `auto_now` registram atualização.
 
-| Model (arquivo) | Campos e relações relevantes | Garantias importantes |
-| --- | --- | --- |
-| `User` (`accounts/models.py`) | email único, username opcional, avatar opcional, bio, language, timezone, theme, timestamps | `USERNAME_FIELD = "email"`; senha herdada é hash |
-| `Organization` (`organizations/models.py`) | name, slug único, owner → User, timestamps | owner protegido por FK; slug identifica URL logicamente |
-| `OrganizationMembership` | organization, user, role, is_active, approval_status, joined_at | único `(organization, user)` |
-| `TeamInvitation` | organization, email, role, token_hash único, status, expires_at, invited_by, accepted_at | convite pendente único por organização/email; token não fica em claro |
-| `TeamMessage` | organization, author, message até 2.000, created_at | índice `(organization, created_at)` |
-| `Plan` (`subscriptions/models.py`) | name, slug único, price Decimal, billing_interval, is_active, timestamps | catálogo estável por slug |
-| `Subscription` | organization 1:1, plan protegido, status/provider IDs, período e cancelamento | no máximo uma assinatura por organização |
-| `PaymentEvent` | organization opcional, provider, provider_event_id único, type, processed, payload_hash, datas | deduplicação do webhook de assinatura |
-| `SubscriptionPayment` | subscription, provider_payment_id único, amount, BRL, status, paid_at | histórico financeiro do SaaS separado das faturas do cliente |
-| `Client` (`work/models.py`) | organization, contato/empresa/documento/site/notas, status, created_by, timestamps | índices tenant+status e tenant+nome |
-| `Project` | organization, client, name/description, status, priority, datas, progress 0–100, budget opcional, created_by | índices tenant+status e tenant+due_date |
-| `ProjectMember` | project, user, role, joined_at | único `(project, user)` |
-| `ActivityLog` | organization, user opcional, action, entity_type/id, metadata JSON, created_at | índice por entidade e tempo; referência genérica auditável |
-| `TaskLabel` | organization, name, color | nome único dentro do tenant |
-| `Task` | organization, project, title/description, status, priority, due_date, position, labels N:N, created_by, timestamps | índices por projeto/status/posição e tenant; posição não negativa |
-| `TaskAssignee` | task, user, assigned_at | único `(task, user)`; tabela intermediária explícita |
-| `TaskComment` | task, author, message, timestamps | ordenação cronológica e autoria protegida |
-| `TaskAttachment` | task, uploaded_by, file, original_name, file_size, content_type, created_at | metadados persistidos; arquivo em `task_attachments/%Y/%m/` |
-| `MemberRate` (`finance/models.py`) | organization, user, hourly_cost/rate Decimal | único `(organization, user)` |
-| `TimeEntry` | organization, project, task opcional, user, descrição, início/fim, segundos, rates snapshot, billable | constraint impede mais de um timer aberto por tenant/usuário; índices por data/projeto |
-| `Expense` | organization, project opcional, descrição, amount Decimal, category, occurred_on, created_by | valor financeiro ligado ao tenant |
-| `Revenue` | organization, project/client opcionais, descrição, amount, occurred_on, created_by, invoice 1:1 opcional | uma receita automática por fatura |
-| `Invoice` | organization, client, project opcional, number, status, datas, agendamento, notes, subtotal/total, paid_at, created_by | número único dentro da organização |
-| `InvoiceItem` | invoice, descrição, quantity/unit_price/total Decimal, time_entries N:N | itens pertencem por cascade; total calculado no backend |
-| `InvoicePayment` | invoice, public_token UUID único, provider/id único, amount/currency/status, Pix/QR, expiração/pagamento, timestamps | índice invoice+status; tentativa externa separada da fatura |
-| `InvoicePaymentEvent` | provider, provider_event_id único, type, payment opcional, processed_at | webhook Pix idempotente |
-| `ClientAccess` (`portal/models.py`) | organization, client, user, created_at | único `(organization, client, user)` |
-| `ClientInvitation` | organization, client, email, token_hash único, expires/accepted, invited_by, created_at | acesso só nasce após aceite válido |
-| `ProjectDeliverable` | organization, project, title/description, status, due_date opcional, created_by, timestamps | estados controlam aprovação/pedido de mudança |
-| `DeliverableComment` | deliverable, author, message, created_at | colaboração vinculada à entrega visível |
-| `DeliverableAttachment` | deliverable, uploaded_by, arquivo e metadados, created_at | upload em `deliverables/%Y/%m/` |
-| `Notification` | organization, user, type/title/message, data JSON, read_at, created_at | índice `(user, read_at, created_at)` |
-| `NotificationPreference` | user 1:1, email_enabled, in_app_enabled | uma preferência por usuário |
-| `ReminderLog` | invoice, reminder_date, created_at | único `(invoice, reminder_date)` contra lembrete duplicado |
+| Model (arquivo)                            | Campos e relações relevantes                                                                                           | Garantias importantes                                                                  |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `User` (`accounts/models.py`)              | email único, username opcional, avatar opcional, bio, language, timezone, theme, timestamps                            | `USERNAME_FIELD = "email"`; senha herdada é hash                                       |
+| `Organization` (`organizations/models.py`) | name, slug único, owner → User, timestamps                                                                             | owner protegido por FK; slug identifica URL logicamente                                |
+| `OrganizationMembership`                   | organization, user, role, is_active, approval_status, joined_at                                                        | único `(organization, user)`                                                           |
+| `TeamInvitation`                           | organization, email, role, token_hash único, status, expires_at, invited_by, accepted_at                               | convite pendente único por organização/email; token não fica em claro                  |
+| `TeamMessage`                              | organization, author, message até 2.000, created_at                                                                    | índice `(organization, created_at)`                                                    |
+| `Plan` (`subscriptions/models.py`)         | name, slug único, price Decimal, billing_interval, is_active, timestamps                                               | catálogo estável por slug                                                              |
+| `Subscription`                             | organization 1:1, plan protegido, status/provider IDs, período e cancelamento                                          | no máximo uma assinatura por organização                                               |
+| `PaymentEvent`                             | organization opcional, provider, provider_event_id único, type, processed, payload_hash, datas                         | deduplicação do webhook de assinatura                                                  |
+| `SubscriptionPayment`                      | subscription, provider_payment_id único, amount, BRL, status, paid_at                                                  | histórico financeiro do SaaS separado das faturas do cliente                           |
+| `Client` (`work/models.py`)                | organization, contato/empresa/documento/site/notas, status, created_by, timestamps                                     | índices tenant+status e tenant+nome                                                    |
+| `Project`                                  | organization, client, name/description, status, priority, datas, progress 0–100, budget opcional, created_by           | índices tenant+status e tenant+due_date                                                |
+| `ProjectMember`                            | project, user, role, joined_at                                                                                         | único `(project, user)`                                                                |
+| `ActivityLog`                              | organization, user opcional, action, entity_type/id, metadata JSON, created_at                                         | índice por entidade e tempo; referência genérica auditável                             |
+| `TaskLabel`                                | organization, name, color                                                                                              | nome único dentro do tenant                                                            |
+| `Task`                                     | organization, project, title/description, status, priority, due_date, position, labels N:N, created_by, timestamps     | índices por projeto/status/posição e tenant; posição não negativa                      |
+| `TaskAssignee`                             | task, user, assigned_at                                                                                                | único `(task, user)`; tabela intermediária explícita                                   |
+| `TaskComment`                              | task, author, message, timestamps                                                                                      | ordenação cronológica e autoria protegida                                              |
+| `TaskAttachment`                           | task, uploaded_by, file, original_name, file_size, content_type, created_at                                            | metadados persistidos; arquivo em `task_attachments/%Y/%m/`                            |
+| `MemberRate` (`finance/models.py`)         | organization, user, hourly_cost/rate Decimal                                                                           | único `(organization, user)`                                                           |
+| `TimeEntry`                                | organization, project, task opcional, user, descrição, início/fim, segundos, rates snapshot, billable                  | constraint impede mais de um timer aberto por tenant/usuário; índices por data/projeto |
+| `Expense`                                  | organization, project opcional, descrição, amount Decimal, category, occurred_on, created_by                           | valor financeiro ligado ao tenant                                                      |
+| `Revenue`                                  | organization, project/client opcionais, descrição, amount, occurred_on, created_by, invoice 1:1 opcional               | uma receita automática por fatura                                                      |
+| `Invoice`                                  | organization, client, project opcional, number, status, datas, agendamento, notes, subtotal/total, paid_at, created_by | número único dentro da organização                                                     |
+| `InvoiceItem`                              | invoice, descrição, quantity/unit_price/total Decimal, time_entries N:N                                                | itens pertencem por cascade; total calculado no backend                                |
+| `InvoicePayment`                           | invoice, public_token UUID único, provider/id único, amount/currency/status, Pix/QR, expiração/pagamento, timestamps   | índice invoice+status; tentativa externa separada da fatura                            |
+| `InvoicePaymentEvent`                      | provider, provider_event_id único, type, payment opcional, processed_at                                                | webhook Pix idempotente                                                                |
+| `ClientAccess` (`portal/models.py`)        | organization, client, user, created_at                                                                                 | único `(organization, client, user)`                                                   |
+| `ClientInvitation`                         | organization, client, email, token_hash único, expires/accepted, invited_by, created_at                                | acesso só nasce após aceite válido                                                     |
+| `ProjectDeliverable`                       | organization, project, title/description, status, due_date opcional, created_by, timestamps                            | estados controlam aprovação/pedido de mudança                                          |
+| `DeliverableComment`                       | deliverable, author, message, created_at                                                                               | colaboração vinculada à entrega visível                                                |
+| `DeliverableAttachment`                    | deliverable, uploaded_by, arquivo e metadados, created_at                                                              | upload em `deliverables/%Y/%m/`                                                        |
+| `Notification`                             | organization, user, type/title/message, data JSON, read_at, created_at                                                 | índice `(user, read_at, created_at)`                                                   |
+| `NotificationPreference`                   | user 1:1, email_enabled, in_app_enabled                                                                                | uma preferência por usuário                                                            |
+| `ReminderLog`                              | invoice, reminder_date, created_at                                                                                     | único `(invoice, reminder_date)` contra lembrete duplicado                             |
 
 #### Relações e decisões importantes
 
@@ -2113,49 +2113,49 @@ Feche o projeto original e explique: qual é a próxima entidade, qual regra pre
 
 ## Glossário
 
-| Termo | Significado no DevFlow |
-| --- | --- |
-| API | contrato HTTP publicado pelo Django para frontend e integrações |
-| REST | organização da API em recursos, URLs, métodos e representações JSON |
-| HTTP | protocolo de request/response usado pelas páginas para operações comuns |
-| WebSocket | conexão persistente usada para avisar notificações em tempo real |
-| JWT | token assinado que identifica a sessão; access é curto e refresh renova |
-| header | metadado HTTP; `Authorization` leva JWT e `X-Organization-ID` seleciona tenant |
-| CORS | política do navegador que limita quais origens podem chamar a API |
-| CSRF | ataque de requisição forjada; origens confiáveis e configuração Django reduzem risco |
-| ORM | API Python do Django que traduz models/querysets em SQL |
-| model | classe que descreve entidade, campos, relações e constraints persistentes |
-| QuerySet | consulta preguiçosa e combinável do ORM; é a principal fronteira de isolamento |
-| migration | arquivo versionado que transforma o esquema do banco |
-| serializer | valida JSON, converte tipos e representa models na resposta |
-| view/ViewSet | ponto que recebe request, aplica caso de uso e devolve Response |
-| permission | regra DRF que autoriza a operação antes ou durante acesso ao objeto |
-| middleware | camada ao redor da request; request ID e autenticação WS são exemplos distintos |
-| tenant | organização cujos dados devem permanecer isolados das demais |
-| membership | vínculo User–Organization com papel, atividade e aprovação |
-| RBAC | autorização baseada em papéis como OWNER, ADMIN, MEMBER e CLIENT |
-| IDOR | acesso indevido ao trocar IDs; querysets filtrados impedem enumeração entre tenants |
-| component | função React que produz interface a partir de props, estado e contexts |
-| prop | entrada tipada enviada pelo componente pai |
-| state | valor mutável do componente que provoca nova renderização |
-| hook | função React; hooks customizados do projeto encapsulam queries e mutations |
-| context | valor compartilhado pela árvore, usado para auth, idioma e toasts |
-| query/mutation | leitura em cache / alteração de dados no TanStack Query |
-| interceptor | função Axios que acrescenta headers ou trata 401 antes/depois da request |
-| HMR | atualização de módulos pelo Vite durante desenvolvimento sem reload completo |
-| build | checagem TypeScript e geração otimizada do `dist` frontend |
-| PostgreSQL | banco relacional e fonte de verdade persistente |
-| Redis | armazenamento em memória usado como cache, broker e channel layer compartilhado |
-| Celery | executor de tarefas assíncronas; worker consome e beat agenda |
-| broker | transporte de mensagens entre Django/beat e workers Celery |
-| channel layer | transporte de eventos entre processos Channels e grupos WebSocket |
-| idempotência | repetir evento/operação sem duplicar efeito; essencial em webhooks e pagamentos |
-| webhook | request enviada pelo Mercado Pago para informar alteração externa |
-| image/container | molde imutável / processo isolado criado a partir desse molde no Docker |
-| volume | armazenamento Docker que sobrevive à recriação do container |
-| CI | validações automáticas do GitHub Actions a cada push/PR configurado |
-| deploy | publicação do build e serviços com configuração de produção |
-| liveness/readiness | processo está vivo / está pronto para atender com dependências disponíveis |
+| Termo              | Significado no DevFlow                                                               |
+| ------------------ | ------------------------------------------------------------------------------------ |
+| API                | contrato HTTP publicado pelo Django para frontend e integrações                      |
+| REST               | organização da API em recursos, URLs, métodos e representações JSON                  |
+| HTTP               | protocolo de request/response usado pelas páginas para operações comuns              |
+| WebSocket          | conexão persistente usada para avisar notificações em tempo real                     |
+| JWT                | token assinado que identifica a sessão; access é curto e refresh renova              |
+| header             | metadado HTTP; `Authorization` leva JWT e `X-Organization-ID` seleciona tenant       |
+| CORS               | política do navegador que limita quais origens podem chamar a API                    |
+| CSRF               | ataque de requisição forjada; origens confiáveis e configuração Django reduzem risco |
+| ORM                | API Python do Django que traduz models/querysets em SQL                              |
+| model              | classe que descreve entidade, campos, relações e constraints persistentes            |
+| QuerySet           | consulta preguiçosa e combinável do ORM; é a principal fronteira de isolamento       |
+| migration          | arquivo versionado que transforma o esquema do banco                                 |
+| serializer         | valida JSON, converte tipos e representa models na resposta                          |
+| view/ViewSet       | ponto que recebe request, aplica caso de uso e devolve Response                      |
+| permission         | regra DRF que autoriza a operação antes ou durante acesso ao objeto                  |
+| middleware         | camada ao redor da request; request ID e autenticação WS são exemplos distintos      |
+| tenant             | organização cujos dados devem permanecer isolados das demais                         |
+| membership         | vínculo User–Organization com papel, atividade e aprovação                           |
+| RBAC               | autorização baseada em papéis como OWNER, ADMIN, MEMBER e CLIENT                     |
+| IDOR               | acesso indevido ao trocar IDs; querysets filtrados impedem enumeração entre tenants  |
+| component          | função React que produz interface a partir de props, estado e contexts               |
+| prop               | entrada tipada enviada pelo componente pai                                           |
+| state              | valor mutável do componente que provoca nova renderização                            |
+| hook               | função React; hooks customizados do projeto encapsulam queries e mutations           |
+| context            | valor compartilhado pela árvore, usado para auth, idioma e toasts                    |
+| query/mutation     | leitura em cache / alteração de dados no TanStack Query                              |
+| interceptor        | função Axios que acrescenta headers ou trata 401 antes/depois da request             |
+| HMR                | atualização de módulos pelo Vite durante desenvolvimento sem reload completo         |
+| build              | checagem TypeScript e geração otimizada do `dist` frontend                           |
+| PostgreSQL         | banco relacional e fonte de verdade persistente                                      |
+| Redis              | armazenamento em memória usado como cache, broker e channel layer compartilhado      |
+| Celery             | executor de tarefas assíncronas; worker consome e beat agenda                        |
+| broker             | transporte de mensagens entre Django/beat e workers Celery                           |
+| channel layer      | transporte de eventos entre processos Channels e grupos WebSocket                    |
+| idempotência       | repetir evento/operação sem duplicar efeito; essencial em webhooks e pagamentos      |
+| webhook            | request enviada pelo Mercado Pago para informar alteração externa                    |
+| image/container    | molde imutável / processo isolado criado a partir desse molde no Docker              |
+| volume             | armazenamento Docker que sobrevive à recriação do container                          |
+| CI                 | validações automáticas do GitHub Actions a cada push/PR configurado                  |
+| deploy             | publicação do build e serviços com configuração de produção                          |
+| liveness/readiness | processo está vivo / está pronto para atender com dependências disponíveis           |
 
 ## Perguntas da trilha de construção
 
@@ -2219,3 +2219,5 @@ Ao concluir o estudo, verifique se consegue explicar sem consultar o guia:
 - diferença entre HTTP, WebSocket, Celery e Redis;
 - como Docker local difere da produção;
 - como build, deploy, Git, testes e CI protegem a entrega.
+
+- FIM
