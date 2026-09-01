@@ -40,7 +40,7 @@ jobs:
       - run: coverage run backend/manage.py test apps
       - run: coverage report --fail-under=80
       - run: coverage xml -o coverage-backend.xml
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: backend-coverage
@@ -63,7 +63,7 @@ jobs:
       - run: npm run test:coverage
       - run: npm run build
       - run: npm audit --audit-level=high
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: frontend-coverage
