@@ -91,7 +91,9 @@ class OptionalRedisConfigurationTests(SimpleTestCase):
         )
         values = json.loads(result.stdout)
         self.assertFalse(values["redis"])
-        self.assertEqual(values["cache"], "django.core.cache.backends.locmem.LocMemCache")
+        self.assertEqual(
+            values["cache"], "django.core.cache.backends.locmem.LocMemCache"
+        )
         self.assertEqual(values["channels"], "channels.layers.InMemoryChannelLayer")
         self.assertEqual(values["broker"], "memory://")
         self.assertTrue(values["eager"])
@@ -134,6 +136,43 @@ class DatabaseConfigurationTests(SimpleTestCase):
                 "PASSWORD": "configured_password",
                 "HOST": "configured_host",
                 "PORT": "5544",
+            },
+        )
+
+
+class EmailConfigurationTests(SimpleTestCase):
+    def test_smtp_password_is_cleaned_of_spaces(self):
+        backend = Path(__file__).resolve().parents[2]
+        script = (
+            "import json, django; django.setup(); from django.conf import settings; "
+            "print(json.dumps({'host_user': settings.EMAIL_HOST_USER, 'host_password': settings.EMAIL_HOST_PASSWORD}))"
+        )
+        environment = {
+            **os.environ,
+            "DJANGO_SETTINGS_MODULE": "config.settings",
+            "DEBUG": "True",
+            "EMAIL_BACKEND": "django.core.mail.backends.smtp.EmailBackend",
+            "EMAIL_HOST": "smtp.gmail.com",
+            "EMAIL_PORT": "587",
+            "EMAIL_HOST_USER": " user@gmail.com ",
+            "EMAIL_HOST_PASSWORD": "abcd efgh ijkl mnop",
+            "EMAIL_USE_TLS": "True",
+            "DEFAULT_FROM_EMAIL": "DevFlow <devflow@example.com>",
+        }
+        result = subprocess.run(
+            [sys.executable, "-c", script],
+            cwd=backend,
+            env=environment,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        self.assertEqual(
+            json.loads(result.stdout),
+            {
+                "host_user": "user@gmail.com",
+                "host_password": "abcdefghijklmnop",
             },
         )
 

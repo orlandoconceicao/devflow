@@ -165,9 +165,7 @@ else:
             "LOCATION": "devflow-local",
         }
     }
-    CHANNEL_LAYERS = {
-        "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}
-    }
+    CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
 CELERY_BROKER_URL = config(
     "CELERY_BROKER_URL", default=REDIS_URL if REDIS_ENABLED else "memory://"
 )
@@ -193,12 +191,22 @@ CELERY_BEAT_SCHEDULE = {
 EMAIL_BACKEND = config(
     "EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend"
 )
-EMAIL_HOST = config("EMAIL_HOST", default="")
+
+
+def _clean_email_setting(value):
+    if value is None:
+        return ""
+    return "".join(str(value).split())
+
+
+EMAIL_HOST = config("EMAIL_HOST", default="").strip()
 EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
-EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
-EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
+EMAIL_HOST_USER = _clean_email_setting(config("EMAIL_HOST_USER", default=""))
+EMAIL_HOST_PASSWORD = _clean_email_setting(config("EMAIL_HOST_PASSWORD", default=""))
 EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
-DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="DevFlow <suporte@localhost>")
+DEFAULT_FROM_EMAIL = config(
+    "DEFAULT_FROM_EMAIL", default="DevFlow <suporte@localhost>"
+).strip()
 MESSAGE_PROVIDER = config("MESSAGE_PROVIDER", default="")
 WHATSAPP_API_URL = config("WHATSAPP_API_URL", default="")
 WHATSAPP_ACCESS_TOKEN = config("WHATSAPP_ACCESS_TOKEN", default="")
