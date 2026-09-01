@@ -76,11 +76,13 @@ describe('Equipe', () => {
   });
 
   it('Primário visualiza membros e o acesso responsivo ao chat', async () => {
+    const user = userEvent.setup();
     renderPage();
 
     const chatLink = await screen.findByRole('link', { name: /Chat da equipe/ });
     expect(chatLink).toHaveAttribute('href', '/team/chat');
-    expect(screen.queryByRole('button', { name: /Convidar membro/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Convidar membro/ }));
+    expect(screen.getByRole('heading', { name: 'Convidar membro' })).toBeInTheDocument();
     expect(screen.getByText('owner@acme.test')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: /Remover owner@acme.test/ }),
@@ -124,12 +126,14 @@ describe('Equipe', () => {
       },
     ]);
     service.cancelInvitation.mockResolvedValue({} as never);
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     renderPage();
 
     await user.click(await screen.findByRole('button', { name: 'Cancelar convite' }));
 
-    expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('invite@acme.test'));
+    expect(screen.getByRole('dialog', { name: 'Cancelar convite' })).toHaveTextContent(
+      'invite@acme.test',
+    );
+    await user.click(screen.getByRole('button', { name: 'Sim, cancelar convite' }));
     expect(service.cancelInvitation).toHaveBeenCalledWith(1, 9);
     await waitFor(() => expect(screen.queryByText('invite@acme.test')).not.toBeInTheDocument());
     expect(await screen.findByText(/Convite para invite@acme.test cancelado/)).toBeInTheDocument();
@@ -152,18 +156,19 @@ describe('Equipe', () => {
         rejectCancellation = reject;
       }),
     );
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     renderPage();
 
     const cancel = await screen.findByRole('button', { name: 'Cancelar convite' });
     await user.click(cancel);
+    const confirmCancellation = screen.getByRole('button', { name: 'Sim, cancelar convite' });
+    await user.click(confirmCancellation);
 
-    expect(cancel).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Cancelando…' })).toBeInTheDocument();
+    expect(confirmCancellation).toBeDisabled();
+    expect(confirmCancellation).toHaveTextContent('Cancelando…');
     rejectCancellation?.(new Error('offline'));
     expect(await screen.findAllByText('Não foi possível cancelar o convite.')).toHaveLength(2);
-    expect(screen.getByText('pending@acme.test')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Cancelar convite' })).toBeEnabled();
+    expect(screen.getAllByText('pending@acme.test').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'Sim, cancelar convite' })).toBeEnabled();
   });
 
   it('mantém a página estável e mostra feedback quando a remoção falha', async () => {

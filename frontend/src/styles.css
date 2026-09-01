@@ -1169,6 +1169,41 @@ td {
   color: #6b7280;
   padding: 4px;
 }
+.team-header-actions {
+  flex-wrap: wrap;
+}
+.actions .team-invite-button {
+  min-height: 44px;
+  padding: 10px 16px;
+  gap: 8px;
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+  background: var(--app-surface);
+  color: var(--app-text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+.actions .team-invite-button:hover {
+  border-color: var(--app-text-muted);
+  background: var(--app-surface-muted);
+  color: var(--app-text);
+  transform: translateY(-1px);
+}
+.actions .team-invite-button:focus-visible {
+  outline: 3px solid rgb(99 102 241 / 18%);
+  outline-offset: 2px;
+  border-color: #6366f1;
+}
+.actions .team-invite-button:active {
+  background: var(--app-surface-subtle);
+  transform: translateY(0);
+}
 .actions .team-chat-button {
   min-height: 44px;
   padding: 11px 18px;
@@ -1244,10 +1279,12 @@ td {
     gap: 18px;
   }
   .team-page-head .actions,
-  .team-page-head .team-chat-button {
+  .team-page-head .team-chat-button,
+  .team-page-head .team-invite-button {
     width: 100%;
   }
-  .team-page-head .team-chat-button {
+  .team-page-head .team-chat-button,
+  .team-page-head .team-invite-button {
     display: inline-flex;
   }
 }
@@ -1423,6 +1460,45 @@ td {
   gap: 10px;
   border-top: 1px solid #e5e7eb;
   padding-top: 18px;
+}
+.team-confirmation-modal {
+  width: min(460px, 100%);
+}
+.team-confirmation-modal h2 {
+  margin-bottom: 10px;
+}
+.team-confirmation-modal p {
+  margin: 0 0 24px;
+  color: var(--app-text-secondary);
+  line-height: 1.55;
+}
+.team-confirmation-modal strong {
+  color: var(--app-text);
+  overflow-wrap: anywhere;
+}
+.button.team-confirmation-destructive {
+  border: 1px solid #b91c1c;
+  background: #b91c1c;
+  color: #fff;
+}
+.button.team-confirmation-destructive:hover:not(:disabled) {
+  border-color: #991b1b;
+  background: #991b1b;
+}
+.button.team-confirmation-destructive:focus-visible {
+  outline: 3px solid rgb(220 38 38 / 20%);
+  outline-offset: 2px;
+}
+.button.team-confirmation-destructive:active:not(:disabled) {
+  background: #7f1d1d;
+}
+@media (max-width: 480px) {
+  .team-confirmation-modal footer {
+    flex-direction: column-reverse;
+  }
+  .team-confirmation-modal footer .button {
+    width: 100%;
+  }
 }
 .button.secondary {
   background: #fff;

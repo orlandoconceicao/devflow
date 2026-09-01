@@ -1,4 +1,4 @@
-import { Copy, MessageCircle, Trash2, XCircle } from 'lucide-react';
+import { Copy, MessageCircle, Plus, Trash2, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button, EmptyState, Input, LoadingState, Select } from '../components/ui';
 import { organizationService } from '../services/work';
@@ -19,6 +19,10 @@ export function TeamPage() {
   const [error, setError] = useState('');
   const [removingMemberId, setRemovingMemberId] = useState<number | null>(null);
   const [cancelingInvitationId, setCancelingInvitationId] = useState<number | null>(null);
+  const [invitationToCancel, setInvitationToCancel] = useState<{
+    id: number;
+    email: string;
+  } | null>(null);
   const load = async () => {
     const org = await organizationService.ensure();
     setOrganization(org);
@@ -53,7 +57,11 @@ export function TeamPage() {
             próprio usuário não pode se promover.
           </p>
         </div>
-        <div className="actions">
+        <div className="actions team-header-actions">
+          <Button className="team-invite-button" onClick={() => setOpen(true)}>
+            <Plus size={18} strokeWidth={2} aria-hidden="true" />
+            Convidar membro
+          </Button>
           <Link className="button team-chat-button" to="/team/chat">
             <MessageCircle size={18} strokeWidth={2} aria-hidden="true" />
             Chat da equipe
@@ -190,28 +198,7 @@ export function TeamPage() {
               <Button
                 className="team-destructive-button"
                 disabled={cancelingInvitationId === invite.id}
-                onClick={async () => {
-                  if (
-                    !confirm(`Tem certeza de que deseja cancelar este convite?\n\n${invite.email}`)
-                  )
-                    return;
-                  setCancelingInvitationId(invite.id);
-                  setError('');
-                  try {
-                    await organizationService.cancelInvitation(organization.id, invite.id);
-                    setInvitations((current) => current.filter((item) => item.id !== invite.id));
-                    toast(`Convite para ${invite.email} cancelado.`);
-                  } catch (requestError) {
-                    const message = getApiErrorDetails(
-                      requestError,
-                      'Não foi possível cancelar o convite.',
-                    ).message;
-                    setError(message);
-                    toast(message, 'error');
-                  } finally {
-                    setCancelingInvitationId(null);
-                  }
-                }}
+                onClick={() => setInvitationToCancel({ id: invite.id, email: invite.email })}
               >
                 <XCircle size={16} aria-hidden="true" />
                 {cancelingInvitationId === invite.id ? 'Cancelando…' : 'Cancelar convite'}
@@ -223,7 +210,76 @@ export function TeamPage() {
       {open && (
         <InviteModal organization={organization} onClose={() => setOpen(false)} onInvited={load} />
       )}
+      {invitationToCancel && (
+        <CancelInvitationModal
+          email={invitationToCancel.email}
+          loading={cancelingInvitationId === invitationToCancel.id}
+          onClose={() => setInvitationToCancel(null)}
+          onConfirm={async () => {
+            const invite = invitationToCancel;
+            setCancelingInvitationId(invite.id);
+            setError('');
+            try {
+              await organizationService.cancelInvitation(organization.id, invite.id);
+              setInvitations((current) => current.filter((item) => item.id !== invite.id));
+              setInvitationToCancel(null);
+              toast(`Convite para ${invite.email} cancelado.`);
+            } catch (requestError) {
+              const message = getApiErrorDetails(
+                requestError,
+                'Não foi possível cancelar o convite.',
+              ).message;
+              setError(message);
+              toast(message, 'error');
+            } finally {
+              setCancelingInvitationId(null);
+            }
+          }}
+        />
+      )}
     </>
+  );
+}
+
+function CancelInvitationModal({
+  email,
+  loading,
+  onClose,
+  onConfirm,
+}: {
+  email: string;
+  loading: boolean;
+  onClose: () => void;
+  onConfirm: () => Promise<void>;
+}) {
+  return (
+    <div className="modal-backdrop" role="presentation">
+      <section
+        className="form-modal team-confirmation-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cancel-invitation-title"
+        aria-describedby="cancel-invitation-description"
+      >
+        <h2 id="cancel-invitation-title">Cancelar convite</h2>
+        <p id="cancel-invitation-description">
+          Tem certeza de que deseja cancelar o convite enviado para <strong>{email}</strong>?
+        </p>
+        <footer>
+          <Button className="secondary" disabled={loading} onClick={onClose}>
+            Voltar
+          </Button>
+          <Button
+            className="team-confirmation-destructive"
+            disabled={loading}
+            onClick={() => void onConfirm()}
+          >
+            <XCircle size={17} aria-hidden="true" />
+            {loading ? 'Cancelando…' : 'Sim, cancelar convite'}
+          </Button>
+        </footer>
+      </section>
+    </div>
   );
 }
 
