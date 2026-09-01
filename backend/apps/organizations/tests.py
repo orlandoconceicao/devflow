@@ -1,13 +1,46 @@
 from datetime import timedelta
 from unittest.mock import patch
 
+from django.core import mail
 from django.core.management import call_command
+from django.test import SimpleTestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from apps.accounts.models import User
 
 from .models import OrganizationMembership, TeamInvitation
+from .tasks import send_team_invitation_email
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="DevFlow <noreply@devflow.test>",
+    FRONTEND_URL="https://app.devflow.test",
+)
+class TeamInvitationEmailTests(SimpleTestCase):
+    def test_sends_professional_text_and_html_invitation(self):
+        sent = send_team_invitation_email(
+            "convidado@example.com", "Equipe <Dev>", "token-seguro"
+        )
+
+        self.assertEqual(sent, 1)
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+        self.assertEqual(
+            message.subject,
+            "Você foi convidado para a equipe Equipe <Dev> no DevFlow",
+        )
+        self.assertIn("expira em 7 dias", message.body)
+        self.assertIn(
+            "https://app.devflow.test/team-invitations/accept?token=token-seguro",
+            message.body,
+        )
+        self.assertEqual(len(message.alternatives), 1)
+        html = message.alternatives[0].content
+        self.assertIn("Aceitar convite", html)
+        self.assertIn("Equipe &lt;Dev&gt;", html)
+        self.assertNotIn("<strong>Equipe <Dev></strong>", html)
 
 
 class TeamApiTests(APITestCase):
