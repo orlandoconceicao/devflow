@@ -32,6 +32,13 @@ class UserSerializer(serializers.ModelSerializer):
             "updated_at",
             "pending_workspace_approval",
         )
+        read_only_fields = (
+            "id",
+            "username",
+            "date_joined",
+            "created_at",
+            "updated_at",
+        )
 
     def get_pending_workspace_approval(self, obj):
         return obj.memberships.filter(approval_status="PENDING").exists()
@@ -41,17 +48,10 @@ class UserSerializer(serializers.ModelSerializer):
         if User.objects.exclude(pk=getattr(self.instance, "pk", None)).filter(email=value).exists():
             raise serializers.ValidationError("Já existe uma conta com este email.")
         return value
-        read_only_fields = (
-            "id",
-            "username",
-            "date_joined",
-            "created_at",
-            "updated_at",
-        )
 
     def validate_avatar(self, value):
-        if value and value.size > 2 * 1024 * 1024:
-            raise serializers.ValidationError("A foto deve ter no máximo 2 MB.")
+        if value and value.size > 10 * 1024 * 1024:
+            raise serializers.ValidationError("A imagem deve ter no máximo 10 MB.")
         if value and getattr(value, "content_type", "") not in {
             "image/jpeg", "image/png", "image/webp"
         }:

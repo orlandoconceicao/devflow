@@ -2,13 +2,15 @@ from datetime import timedelta
 from unittest.mock import patch
 
 from django.core.management import call_command
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from apps.accounts.models import User
 from apps.organizations.models import OrganizationMembership
 
-from .models import Invoice, InvoicePayment, Revenue
+from .models import Invoice, InvoicePayment, Revenue, TimeEntry
 from .payments import PaymentProviderError, PixResult, process_mercado_pago_payment
 
 
@@ -162,6 +164,49 @@ class FinanceApiTests(APITestCase):
             self.client.get("/api/finance/dashboard/", **headers).status_code, 403
         )
         self.assertEqual(self.client.get("/api/expenses/", **headers).status_code, 403)
+
+    def test_dashboard_uses_bounded_queries_and_isolates_organizations(self):
+        owner, organization, headers, _client, project = self.setup_workspace()
+        now = timezone.now()
+        TimeEntry.objects.bulk_create(
+            [
+                TimeEntry(
+                    organization_id=organization["id"],
+                    project_id=project["id"],
+                    user=owner,
+                    started_at=now - timedelta(hours=1),
+                    ended_at=now,
+                    duration_seconds=3600,
+                    hourly_cost="25.00",
+                    hourly_rate="50.00",
+                )
+                for _ in range(30)
+            ]
+        )
+        with CaptureQueriesContext(connection) as queries:
+            response = self.client.get("/api/finance/dashboard/", **headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["hours"], 30)
+        self.assertEqual(response.data["labor_cost"], 750)
+        self.assertLessEqual(len(queries), 8)
+
+        outsider = User.objects.create_user(
+            email="finance-outsider@test.local", password="StrongPass!2026"
+        )
+        self.login(outsider)
+        foreign_org = self.client.post(
+            "/api/organizations/", {"name": "Foreign Finance"}, format="json"
+        ).data
+        self.assertEqual(
+            self.client.get("/api/finance/dashboard/", **headers).status_code, 403
+        )
+        self.assertEqual(
+            self.client.get(
+                "/api/finance/dashboard/",
+                HTTP_X_ORGANIZATION_ID=str(foreign_org["id"]),
+            ).data["labor_cost"],
+            0,
+        )
 
 
 class PublicPixPaymentTests(APITestCase):

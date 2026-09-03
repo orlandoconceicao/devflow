@@ -255,6 +255,47 @@ class WorkApiTests(APITestCase):
             204,
         )
 
+    def test_secondary_admin_creates_project_in_selected_organization(self):
+        owner = self.user("project-owner@local.test")
+        selected_org = self.org(owner, "Selected Org")
+        selected_client = self.client.post(
+            "/api/clients/",
+            {"name": "Selected Client"},
+            format="json",
+            **self.headers(selected_org),
+        ).data
+        other_org = self.org(owner, "Other Org")
+        admin = self.user("project-admin@local.test")
+        OrganizationMembership.objects.create(
+            organization_id=selected_org["id"], user=admin, role="ADMIN"
+        )
+
+        self.token(admin)
+        response = self.client.post(
+            "/api/projects/",
+            {
+                "name": "Admin Project",
+                "client": selected_client["id"],
+                "status": "PLANNING",
+                "priority": "MEDIUM",
+            },
+            format="json",
+            **self.headers(selected_org),
+        )
+        self.assertEqual(response.status_code, 201, response.data)
+        project = Project.objects.get(pk=response.data["id"])
+        self.assertEqual(project.organization_id, selected_org["id"])
+        self.assertEqual(project.created_by_id, admin.id)
+        self.assertFalse(Project.objects.filter(organization_id=other_org["id"]).exists())
+
+        wrong_header = self.client.post(
+            "/api/projects/",
+            {"name": "Wrong tenant", "client": selected_client["id"]},
+            format="json",
+            **self.headers(other_org),
+        )
+        self.assertEqual(wrong_header.status_code, 403)
+
     def task_setup(self):
         owner = self.user("taskowner@local.test")
         org = self.org(owner, "Task Org")

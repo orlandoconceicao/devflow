@@ -26,11 +26,10 @@ export function FinancePage() {
     if (params.get('tab') === 'invoices') setTab('invoices');
     if (params.get('new') === '1') setOpen(true);
   }, [params]);
-  const dashboard = useFinanceDashboard(),
-    expenses = useExpenses(),
-    revenues = useRevenues(),
-    invoices = useInvoices();
-  if (dashboard.isLoading) return <LoadingState />;
+  const dashboard = useFinanceDashboard(tab === 'overview'),
+    expenses = useExpenses(tab === 'expenses'),
+    revenues = useRevenues(tab === 'revenues'),
+    invoices = useInvoices(tab === 'invoices');
   return (
     <>
       <div className="page-head">
@@ -56,37 +55,55 @@ export function FinancePage() {
           </button>
         ))}
       </div>
-      {tab === 'overview' && (
-        <div className="stats">
-          <article>
-            <div>
-              <span>Receita</span>
-              <strong>{money(dashboard.data?.revenue || 0)}</strong>
-            </div>
-          </article>
-          <article>
-            <div>
-              <span>Despesas</span>
-              <strong>{money(dashboard.data?.expenses || 0)}</strong>
-            </div>
-          </article>
-          <article>
-            <div>
-              <span>Custo de horas</span>
-              <strong>{money(dashboard.data?.labor_cost || 0)}</strong>
-            </div>
-          </article>
-          <article>
-            <div>
-              <span>Lucro estimado</span>
-              <strong>{money(dashboard.data?.profit || 0)}</strong>
-            </div>
-          </article>
-        </div>
-      )}
-      {tab === 'revenues' && <DataTable rows={revenues.data?.results || []} kind="Receitas" />}
-      {tab === 'expenses' && <DataTable rows={expenses.data?.results || []} kind="Despesas" />}
-      {tab === 'invoices' && <InvoiceTable rows={invoices.data?.results || []} />}
+      {tab === 'overview' &&
+        (dashboard.isLoading ? (
+          <LoadingState />
+        ) : (
+          <div className="stats">
+            <article>
+              <div>
+                <span>Receita</span>
+                <strong>{money(dashboard.data?.revenue || 0)}</strong>
+              </div>
+            </article>
+            <article>
+              <div>
+                <span>Despesas</span>
+                <strong>{money(dashboard.data?.expenses || 0)}</strong>
+              </div>
+            </article>
+            <article>
+              <div>
+                <span>Custo de horas</span>
+                <strong>{money(dashboard.data?.labor_cost || 0)}</strong>
+              </div>
+            </article>
+            <article>
+              <div>
+                <span>Lucro estimado</span>
+                <strong>{money(dashboard.data?.profit || 0)}</strong>
+              </div>
+            </article>
+          </div>
+        ))}
+      {tab === 'revenues' &&
+        (revenues.isLoading ? (
+          <LoadingState />
+        ) : (
+          <DataTable rows={revenues.data?.results || []} kind="Receitas" />
+        ))}
+      {tab === 'expenses' &&
+        (expenses.isLoading ? (
+          <LoadingState />
+        ) : (
+          <DataTable rows={expenses.data?.results || []} kind="Despesas" />
+        ))}
+      {tab === 'invoices' &&
+        (invoices.isLoading ? (
+          <LoadingState />
+        ) : (
+          <InvoiceTable rows={invoices.data?.results || []} />
+        ))}
       {open && (
         <ChargeForm initialClient={params.get('client') || ''} onClose={() => setOpen(false)} />
       )}
@@ -195,17 +212,31 @@ function ChargeForm({ onClose, initialClient }: { onClose: () => void; initialCl
     setForm((old) => ({ ...old, [key]: value }));
   return (
     <div className="modal-backdrop">
-      <div className="form-modal">
+      <div
+        className="form-modal charge-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="charge-title"
+      >
         <div>
-          <h2>Nova cobrança</h2>
-          <button onClick={onClose}>×</button>
+          <div>
+            <span className="eyebrow">COBRANÇA PIX</span>
+            <h2 id="charge-title">Nova cobrança</h2>
+            <p>Organize os dados e confira o valor antes de criar.</p>
+          </div>
+          <button onClick={onClose} aria-label="Fechar">
+            ×
+          </button>
         </div>
         {!clients.isLoading && !clients.data?.results.length ? (
           <EmptyState
             title="Nenhum cliente cadastrado"
             description="Para criar uma cobrança, primeiro cadastre o cliente."
             action={
-              <Link className="button" to="/clients?new=1&returnTo=%2Ffinance%3Ftab%3Dinvoices%26new%3D1">
+              <Link
+                className="button"
+                to="/clients?new=1&returnTo=%2Ffinance%3Ftab%3Dinvoices%26new%3D1"
+              >
                 Cadastrar cliente
               </Link>
             }
@@ -315,10 +346,20 @@ function ChargeForm({ onClose, initialClient }: { onClose: () => void; initialCl
               Gerar automaticamente na data de liberação
             </label>
             {(create.error || generate.error) && (
-              <small>
-                Não foi possível criar a cobrança. Confira os dados e a configuração do Mercado Pago.
-              </small>
+              <div className="form-error" role="alert">
+                Não foi possível criar a cobrança. Confira os dados e a configuração do Mercado
+                Pago.
+              </div>
             )}
+            <aside className="charge-summary">
+              <span>Total da cobrança</span>
+              <strong>{form.amount ? money(form.amount) : 'R$ 0,00'}</strong>
+              <small>
+                {form.due_on
+                  ? `Vence em ${new Date(`${form.due_on}T00:00`).toLocaleDateString('pt-BR')}`
+                  : 'Informe uma data de vencimento'}
+              </small>
+            </aside>
             <footer>
               <Button type="button" className="secondary" onClick={onClose}>
                 Cancelar

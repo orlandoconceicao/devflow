@@ -1,42 +1,49 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { clientService, dashboardService, projectService } from '../../services/work';
 import type { Client, Project, ProjectRole } from '../../types';
+const organizationKey = () => localStorage.getItem('organization_id');
 export function useClients(params?: Record<string, string | number>) {
-  return useQuery({ queryKey: ['clients', params], queryFn: () => clientService.list(params) });
+  return useQuery({
+    queryKey: ['clients', organizationKey(), params],
+    queryFn: () => clientService.list(params),
+  });
 }
 export function useClient(id: number) {
   return useQuery({
-    queryKey: ['client', id],
+    queryKey: ['client', organizationKey(), id],
     queryFn: () => clientService.get(id),
     enabled: !!id,
   });
 }
 export function useProjects(params?: Record<string, string | number>) {
-  return useQuery({ queryKey: ['projects', params], queryFn: () => projectService.list(params) });
+  return useQuery({
+    queryKey: ['projects', organizationKey(), params],
+    queryFn: () => projectService.list(params),
+  });
 }
 export function useProject(id: number) {
   return useQuery({
-    queryKey: ['project', id],
+    queryKey: ['project', organizationKey(), id],
     queryFn: () => projectService.get(id),
     enabled: !!id,
   });
 }
 export function useProjectMembers(id: number) {
   return useQuery({
-    queryKey: ['project-members', id],
+    queryKey: ['project-members', organizationKey(), id],
     queryFn: () => projectService.members(id),
     enabled: !!id,
   });
 }
 export function useProjectActivities(id: number) {
   return useQuery({
-    queryKey: ['project-activities', id],
+    queryKey: ['project-activities', organizationKey(), id],
     queryFn: () => projectService.activities(id),
     enabled: !!id,
   });
 }
 export function useDashboard() {
-  return useQuery({ queryKey: ['dashboard'], queryFn: dashboardService.get });
+  return useQuery({ queryKey: ['dashboard', organizationKey()], queryFn: dashboardService.get });
 }
 export function useCreateClient() {
   const q = useQueryClient();

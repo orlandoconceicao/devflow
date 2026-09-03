@@ -37,7 +37,7 @@ function Probe() {
   const auth = useAuth();
   return (
     <>
-      <span>{auth.isLoading ? 'loading' : auth.user?.email ?? 'anonymous'}</span>
+      <span>{auth.isLoading ? 'loading' : (auth.user?.email ?? 'anonymous')}</span>
       <button onClick={() => void auth.login('  DEV@DEVFLOW.TEST ', 'secret')}>login</button>
       <button onClick={() => void auth.logout()}>logout</button>
     </>
@@ -51,7 +51,11 @@ describe('AuthProvider', () => {
   });
 
   it('starts anonymously without making a profile request when no token exists', async () => {
-    render(<AuthProvider><Probe /></AuthProvider>);
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
 
     expect(await screen.findByText('anonymous')).toBeInTheDocument();
     expect(apiMocks.get).not.toHaveBeenCalled();
@@ -61,7 +65,11 @@ describe('AuthProvider', () => {
     apiMocks.post.mockResolvedValueOnce({
       data: { access: 'access-token', refresh: 'refresh-token', user },
     });
-    render(<AuthProvider><Probe /></AuthProvider>);
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
 
     await userEvent.click(await screen.findByRole('button', { name: 'login' }));
 
@@ -79,7 +87,11 @@ describe('AuthProvider', () => {
     localStorage.setItem('organization_id', '12');
     apiMocks.get.mockRejectedValueOnce(new Error('unauthorized'));
 
-    render(<AuthProvider><Probe /></AuthProvider>);
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
 
     expect(await screen.findByText('anonymous')).toBeInTheDocument();
     expect(apiMocks.get).toHaveBeenCalledWith('/auth/me/');
@@ -91,7 +103,11 @@ describe('AuthProvider', () => {
     localStorage.setItem('refresh', 'refresh-token');
     apiMocks.get.mockResolvedValueOnce({ data: user });
     apiMocks.post.mockRejectedValueOnce(new Error('offline'));
-    render(<AuthProvider><Probe /></AuthProvider>);
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
     await screen.findByText(user.email);
 
     await userEvent.click(screen.getByRole('button', { name: 'logout' }));
@@ -99,5 +115,30 @@ describe('AuthProvider', () => {
     await waitFor(() => expect(screen.getByText('anonymous')).toBeInTheDocument());
     expect(apiMocks.post).toHaveBeenCalledWith('/auth/logout/', { refresh: 'refresh-token' });
     expect(localStorage.getItem('refresh')).toBeNull();
+  });
+
+  it('removes every local credential before remote logout finishes', async () => {
+    let finishLogout!: () => void;
+    localStorage.setItem('refresh', 'refresh-token');
+    localStorage.setItem('organization_id', '42');
+    apiMocks.get.mockResolvedValueOnce({ data: user });
+    apiMocks.post.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        finishLogout = resolve;
+      }),
+    );
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+    await screen.findByText(user.email);
+
+    await userEvent.click(screen.getByRole('button', { name: 'logout' }));
+    expect(localStorage.getItem('access')).toBeNull();
+    expect(localStorage.getItem('refresh')).toBeNull();
+    expect(localStorage.getItem('organization_id')).toBeNull();
+    expect(screen.getByText('anonymous')).toBeInTheDocument();
+    finishLogout();
   });
 });

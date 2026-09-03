@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
+import { useTranslation } from '../i18n';
 export function Button({ className = '', ...props }: ButtonHTMLAttributes<HTMLButtonElement>) {
   return <button className={`button ${className}`} {...props} />;
 }
@@ -6,10 +7,12 @@ export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
   return <input className="input" {...props} />;
 }
 export function LoadingState() {
-  return <div className="state">Carregando…</div>;
+  const { t } = useTranslation();
+  return <div className="state">{t('Carregando')}</div>;
 }
-export function ErrorState({ message = 'Não foi possível carregar.' }: { message?: string }) {
-  return <div className="state error">{message}</div>;
+export function ErrorState({ message }: { message?: string }) {
+  const { t } = useTranslation();
+  return <div className="state error">{message ?? t('Não foi possível carregar.')}</div>;
 }
 export function EmptyState({
   title = 'Em breve',
@@ -20,11 +23,12 @@ export function EmptyState({
   description?: string;
   action?: ReactNode;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="empty">
       <span>✦</span>
-      <h3>{title}</h3>
-      <p>{description}</p>
+      <h3>{t(title)}</h3>
+      <p>{t(description)}</p>
       {action}
     </div>
   );

@@ -125,6 +125,70 @@ label small {
   border-top: 1px solid #e5e7eb;
   padding-top: 14px;
 }
+.sidebar-action {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 13px;
+  border-radius: 9px;
+  color: var(--app-text-muted);
+}
+.sidebar-action:hover {
+  color: #b42318;
+  background: #fff1f0;
+}
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.avatar-picker {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 18px;
+  border: 1px dashed var(--app-border);
+  border-radius: 14px;
+  background: var(--app-surface-subtle);
+}
+.avatar-picker .avatar {
+  width: 76px;
+  height: 76px;
+  flex: 0 0 auto;
+}
+.avatar-picker > div {
+  display: grid;
+  gap: 6px;
+}
+.avatar-picker small {
+  color: var(--app-text-muted);
+}
+.avatar-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.button.ghost {
+  background: transparent;
+  color: var(--app-text-secondary);
+}
+.form-error {
+  color: #b42318;
+  background: #fff1f0;
+  border: 1px solid #fecdca;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
 .profile {
   display: flex;
   align-items: center;
@@ -1429,6 +1493,72 @@ td {
 }
 .form-modal.wide {
   width: min(760px, 100%);
+}
+.charge-modal {
+  width: min(720px, 100%);
+  padding: 0;
+}
+.charge-modal > div:first-child {
+  padding: 24px 26px 18px;
+  border-bottom: 1px solid var(--app-border);
+  align-items: flex-start;
+}
+.charge-modal > div:first-child h2 {
+  margin: 4px 0;
+}
+.charge-modal > div:first-child p {
+  margin: 0;
+  color: var(--app-text-muted);
+  font-size: 13px;
+}
+.charge-modal form {
+  padding: 24px 26px 26px;
+}
+.eyebrow {
+  color: #4f46e5;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.charge-summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: var(--app-accent-soft);
+  color: var(--app-text-secondary);
+}
+.charge-summary strong {
+  margin-left: auto;
+  font-size: 20px;
+  color: var(--app-text);
+}
+.charge-summary small {
+  color: var(--app-text-muted);
+}
+@media (max-width: 600px) {
+  .charge-modal > div:first-child,
+  .charge-modal form {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .charge-modal .form-row {
+    grid-template-columns: 1fr;
+  }
+  .charge-summary {
+    display: grid;
+    gap: 4px;
+  }
+  .charge-summary strong {
+    margin-left: 0;
+  }
+  .charge-modal footer {
+    flex-direction: column-reverse;
+  }
+  .charge-modal footer .button {
+    width: 100%;
+  }
 }
 .form-modal > div {
   display: flex;

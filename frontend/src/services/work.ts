@@ -14,12 +14,20 @@ import type {
 
 let organizationRequest: Promise<Organization | undefined> | null = null;
 
+export function selectOrganization(organizations: Organization[], selectedId: string | null) {
+  const id = Number(selectedId);
+  return organizations.find((item) => item.id === id) ?? organizations[0];
+}
+
 export const organizationService = {
   async ensure() {
     organizationRequest ??= api
       .get<PaginatedResponse<Organization>>('/organizations/')
       .then(({ data }) => {
-        const organization = data.results[0];
+        const organization = selectOrganization(
+          data.results,
+          localStorage.getItem('organization_id'),
+        );
         if (organization) localStorage.setItem('organization_id', String(organization.id));
         return organization;
       })

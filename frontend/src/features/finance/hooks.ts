@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { financeService, reportService, timeService } from '../../services/finance';
+const organizationKey = () => localStorage.getItem('organization_id');
 export const useTimeEntries = () =>
   useQuery({ queryKey: ['time-entries'], queryFn: timeService.list });
 export const useActiveTimer = () =>
@@ -24,14 +25,30 @@ export function useStopTimer() {
     },
   });
 }
-export const useFinanceDashboard = () =>
-  useQuery({ queryKey: ['finance-dashboard'], queryFn: financeService.dashboard });
-export const useExpenses = () =>
-  useQuery({ queryKey: ['expenses'], queryFn: financeService.expenses });
-export const useRevenues = () =>
-  useQuery({ queryKey: ['revenues'], queryFn: financeService.revenues });
-export const useInvoices = () =>
-  useQuery({ queryKey: ['invoices'], queryFn: financeService.invoices });
+export const useFinanceDashboard = (enabled = true) =>
+  useQuery({
+    queryKey: ['finance-dashboard', organizationKey()],
+    queryFn: financeService.dashboard,
+    enabled,
+  });
+export const useExpenses = (enabled = true) =>
+  useQuery({
+    queryKey: ['expenses', organizationKey()],
+    queryFn: financeService.expenses,
+    enabled,
+  });
+export const useRevenues = (enabled = true) =>
+  useQuery({
+    queryKey: ['revenues', organizationKey()],
+    queryFn: financeService.revenues,
+    enabled,
+  });
+export const useInvoices = (enabled = true) =>
+  useQuery({
+    queryKey: ['invoices', organizationKey()],
+    queryFn: financeService.invoices,
+    enabled,
+  });
 export function useCreateInvoice() {
   const q = useQueryClient();
   return useMutation({

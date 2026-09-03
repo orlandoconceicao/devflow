@@ -1,7 +1,7 @@
 import csv
 from decimal import Decimal
 
-from django.db.models import Sum
+from django.db.models import DecimalField, ExpressionWrapper, F, Sum
 from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import status, viewsets
@@ -154,7 +154,7 @@ class RevenueViewSet(TenantViewSet):
 
 
 class InvoiceViewSet(TenantViewSet):
-    queryset = Invoice.objects.select_related("client").prefetch_related(
+    queryset = Invoice.objects.select_related("client", "project").prefetch_related(
         "items__time_entries", "payments"
     )
     serializer_class = InvoiceSerializer
@@ -227,9 +227,14 @@ def finance_dashboard(request):
         request,
         "started_at__date",
     )
-    labor = sum(
-        (Decimal(x.duration_seconds) / Decimal(3600)) * x.hourly_cost for x in time_qs
+    labor_expression = ExpressionWrapper(
+        F("duration_seconds") * F("hourly_cost") / Decimal("3600"),
+        output_field=DecimalField(max_digits=18, decimal_places=4),
     )
+    time_totals = time_qs.aggregate(
+        labor=Sum(labor_expression), seconds=Sum("duration_seconds")
+    )
+    labor = time_totals["labor"] or Decimal("0")
     by_project = list(
         time_qs.values("project__name")
         .annotate(seconds=Sum("duration_seconds"))
@@ -241,7 +246,7 @@ def finance_dashboard(request):
             "expenses": expenses,
             "labor_cost": labor,
             "profit": Decimal(revenue) - Decimal(expenses) - labor,
-            "hours": round(sum(x.duration_seconds for x in time_qs) / 3600, 2),
+            "hours": round((time_totals["seconds"] or 0) / 3600, 2),
             "by_project": by_project,
         }
     )

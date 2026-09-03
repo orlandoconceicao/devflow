@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Menu,
   MessageCircle,
+  LogOut,
   Search,
   Settings,
   Users,
@@ -21,6 +22,7 @@ import { Avatar, LoadingState } from '../components/ui';
 import { organizationService } from '../services/work';
 import { useNotificationsSocket, useUnreadCount } from '../features/notifications/hooks';
 import type { Role } from '../types';
+import { useTranslation } from '../i18n';
 const workspaceLinks = [
   ['/dashboard', 'Dashboard', LayoutDashboard],
   ['/projects', 'Projetos', BriefcaseBusiness],
@@ -46,7 +48,8 @@ export function AppLayout() {
     'loading',
   );
   const [role, setRole] = useState<Role | null>(null);
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const hasWorkspace = workspace === 'present';
@@ -107,23 +110,27 @@ export function AppLayout() {
           {(role === 'CLIENT' ? clientLinks : linksForRole(role)).map(([to, label, Icon]) => (
             <NavLink key={to} to={to} onClick={() => setOpen(false)}>
               <Icon size={18} />
-              {label}
+              {t(label)}
             </NavLink>
           ))}
         </nav>
         <div className="sidebar-bottom">
           <NavLink to="/settings">
             <Settings size={18} />
-            Configurações
+            {t('Configurações')}
           </NavLink>
           <NavLink to="/settings/preferences">
             <Bell size={18} />
-            Preferências
+            {t('Preferências')}
           </NavLink>
           <NavLink to="/help">
             <CircleHelp size={18} />
-            Ajuda
+            {t('Ajuda')}
           </NavLink>
+          <button className="sidebar-action" onClick={() => void logout()}>
+            <LogOut size={18} />
+            {t('Sair')}
+          </button>
           <Link className="profile" to="/settings/profile">
             <Avatar name={user?.first_name || 'U'} url={user?.avatar} />
             <span>
@@ -138,20 +145,24 @@ export function AppLayout() {
         <header className="topbar">
           <div className="search">
             <Search size={18} />
-            <input placeholder="Buscar no DevFlow…" />
+            <input placeholder={t('Buscar no DevFlow…')} />
           </div>
-          <Link className="bell-link" to="/notifications" aria-label="Notificações">
+          <Link className="bell-link" to="/notifications" aria-label={t('Notificações')}>
             <Bell size={20} />
             {!!unread.data?.count && <b>{unread.data.count}</b>}
           </Link>
-          <Link to="/settings/profile" aria-label="Abrir perfil"><Avatar name={user?.first_name || 'U'} url={user?.avatar} /></Link>
+          <Link to="/settings/profile" aria-label="Abrir perfil">
+            <Avatar name={user?.first_name || 'U'} url={user?.avatar} />
+          </Link>
         </header>
         <div className="content">
           {workspace === 'loading' || roleRouteMismatch ? (
             <LoadingState />
           ) : workspace === 'error' ? (
             <div className="form-error">Não foi possível carregar o workspace.</div>
-          ) : workspace === 'missing' && !location.pathname.startsWith('/onboarding') && !isAccountRoute ? (
+          ) : workspace === 'missing' &&
+            !location.pathname.startsWith('/onboarding') &&
+            !isAccountRoute ? (
             <LoadingState />
           ) : (
             <Outlet />

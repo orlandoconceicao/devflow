@@ -60,6 +60,47 @@ npm --prefix frontend test -- --run
 python -m unittest discover -s tests/security -t . -v
 ```
 
+Em PowerShell com uma configuração local que utiliza valores de produção, force as
+variáveis seguras de teste antes de chamar diretamente o Django:
+
+```powershell
+$env:DEBUG='True'
+$env:DATABASE_URL='sqlite:///devflow-test.sqlite3'
+.\.venv\Scripts\python.exe backend\manage.py test
+```
+
+Para executar uma classe, um método ou um arquivo frontend específico:
+
+```powershell
+.\.venv\Scripts\python.exe backend\manage.py test apps.work.tests.WorkApiTests
+.\.venv\Scripts\python.exe backend\manage.py test apps.accounts.tests.LogoutTests.test_logout_blacklists_refresh_and_protected_route_requires_auth
+npm --prefix frontend test -- --run src/features/auth/AuthContext.test.tsx
+npm --prefix frontend test -- --run src/pages/Settings.avatar.test.ts
+```
+
+## Fluxos críticos protegidos
+
+- autenticação, logout local, blacklist de refresh token e rotas protegidas;
+- seleção de workspace, headers e isolamento entre organizações;
+- criação de clientes e projetos por Owner/Admin e rejeição para papéis sem permissão;
+- tarefas, membros, anexos e acesso cruzado por IDs manipulados;
+- receitas, despesas, horas, faturas, PIX, webhooks e isolamento financeiro;
+- limite de queries do dashboard financeiro sem medição frágil de tempo;
+- idioma português/inglês, persistência da preferência e traduções globais;
+- avatar JPG/PNG/WebP, limite exato de 10 MB e rejeição de MIME ou conteúdo falso.
+
+## Como adicionar testes
+
+Mantenha testes Django junto ao app em `backend/apps/<app>/tests.py` e testes Vitest
+ao lado do módulo com sufixo `.test.ts` ou `.test.tsx`. Prefira validar respostas,
+estado persistido, permissões e isolamento observáveis. Use mocks apenas nas
+fronteiras externas, como gateways de pagamento; banco, serializers e endpoints
+devem ser exercitados em conjunto quando o comportamento depender deles.
+
+Para regressões de performance, limite queries com `CaptureQueriesContext` ou
+`assertNumQueries`. Não use limites absolutos de tempo. Todo teste que cria dados
+deve usar o banco efêmero do runner Django e nunca credenciais ou serviços reais.
+
 ## Configuração
 
 Variáveis reconhecidas:

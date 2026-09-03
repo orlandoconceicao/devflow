@@ -71,6 +71,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
   const logout = async () => {
     const refresh = localStorage.getItem('refresh');
+    clearAuthStorage();
+    currentUserRequest = null;
+    setUser(null);
     try {
       if (refresh) await api.post('/auth/logout/', { refresh });
     } catch {
@@ -78,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       clearAuthStorage();
       setUser(null);
+      if (window.location.pathname !== '/login') window.location.replace('/login');
     }
   };
   const value = useMemo(

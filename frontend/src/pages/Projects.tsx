@@ -17,7 +17,7 @@ import {
   useProjects,
   useRemoveProjectMember,
 } from '../features/work/hooks';
-import { api } from '../services/api';
+import { api, getApiErrorDetails } from '../services/api';
 import type {
   OrganizationMembership,
   PaginatedResponse,
@@ -61,6 +61,7 @@ export function ProjectsPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [open, setOpen] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const projects = useProjects({ search, status });
   const clients = useClients();
   const create = useCreateProject();
@@ -125,7 +126,11 @@ export function ProjectsPage() {
         <EmptyState
           title="Você ainda não possui projetos"
           description="Crie seu primeiro projeto e acompanhe o progresso pelo DevFlow."
-          action={<Button onClick={() => setOpen(true)}><Plus size={17}/> Criar projeto</Button>}
+          action={
+            <Button onClick={() => setOpen(true)}>
+              <Plus size={17} /> Criar projeto
+            </Button>
+          }
         />
       ) : (
         <div className="project-grid">
@@ -141,97 +146,120 @@ export function ProjectsPage() {
               <h2>Novo projeto</h2>
               <button onClick={() => setOpen(false)}>×</button>
             </div>
-            {!clients.isLoading && !clients.data?.results.length ? <EmptyState title="Nenhum cliente cadastrado" description="Para criar um projeto, primeiro cadastre um cliente." action={<Link className="button" to="/clients?new=1&returnTo=%2Fprojects%3Fnew%3D1">Cadastrar cliente</Link>} /> :
-            <form
-              onSubmit={handleSubmit(async (v) => {
-                await create.mutateAsync({
-                  ...v,
-                  budget: v.budget || null,
-                  start_date: v.start_date || null,
-                  due_date: v.due_date || null,
-                });
-                reset();
-                setOpen(false);
-              })}
-            >
-              <div className="form-row">
+            {!clients.isLoading && !clients.data?.results.length ? (
+              <EmptyState
+                title="Nenhum cliente cadastrado"
+                description="Para criar um projeto, primeiro cadastre um cliente."
+                action={
+                  <Link className="button" to="/clients?new=1&returnTo=%2Fprojects%3Fnew%3D1">
+                    Cadastrar cliente
+                  </Link>
+                }
+              />
+            ) : (
+              <form
+                onSubmit={handleSubmit(async (v) => {
+                  setSubmitError('');
+                  try {
+                    await create.mutateAsync({
+                      ...v,
+                      budget: v.budget || null,
+                      start_date: v.start_date || null,
+                      due_date: v.due_date || null,
+                    });
+                    reset();
+                    setOpen(false);
+                  } catch (error) {
+                    setSubmitError(
+                      getApiErrorDetails(error, 'Não foi possível criar o projeto.').message,
+                    );
+                  }
+                })}
+              >
+                <div className="form-row">
+                  <label>
+                    Nome
+                    <Input {...register('name')} />
+                    <small>{errors.name?.message}</small>
+                  </label>
+                  <label>
+                    Cliente
+                    <Select {...register('client', { valueAsNumber: true })}>
+                      <option value="">Selecione</option>
+                      {clients.data?.results.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </Select>
+                    <small>{errors.client?.message}</small>
+                  </label>
+                </div>
                 <label>
-                  Nome
-                  <Input {...register('name')} />
-                  <small>{errors.name?.message}</small>
+                  Descrição
+                  <textarea {...register('description')} />
                 </label>
-                <label>
-                  Cliente
-                  <Select {...register('client', { valueAsNumber: true })}>
-                    <option value="">Selecione</option>
-                    {clients.data?.results.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </Select>
-                  <small>{errors.client?.message}</small>
-                </label>
-              </div>
-              <label>
-                Descrição
-                <textarea {...register('description')} />
-              </label>
-              <div className="form-row">
-                <label>
-                  Status
-                  <Select {...register('status')}>
-                    {Object.entries(statusLabel).map(([v, l]) => (
-                      <option value={v} key={v}>
-                        {l}
-                      </option>
-                    ))}
-                  </Select>
-                </label>
-                <label>
-                  Prioridade
-                  <Select {...register('priority')}>
-                    {Object.entries(priorityLabel).map(([v, l]) => (
-                      <option value={v} key={v}>
-                        {l}
-                      </option>
-                    ))}
-                  </Select>
-                </label>
-              </div>
-              <div className="form-row">
-                <label>
-                  Data inicial
-                  <Input type="date" {...register('start_date')} />
-                </label>
-                <label>
-                  Prazo
-                  <Input type="date" {...register('due_date')} />
-                  <small>{errors.due_date?.message}</small>
-                </label>
-              </div>
-              <div className="form-row">
-                <label>
-                  Progresso
-                  <Input
-                    type="number"
-                    min="0"
-                    max="100"
-                    {...register('progress', { valueAsNumber: true })}
-                  />
-                </label>
-                <label>
-                  Orçamento
-                  <Input type="number" min="0" step="0.01" {...register('budget')} />
-                </label>
-              </div>
-              <footer>
-                <Button type="button" className="secondary" onClick={() => setOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button disabled={isSubmitting}>Criar projeto</Button>
-              </footer>
-            </form>}
+                <div className="form-row">
+                  <label>
+                    Status
+                    <Select {...register('status')}>
+                      {Object.entries(statusLabel).map(([v, l]) => (
+                        <option value={v} key={v}>
+                          {l}
+                        </option>
+                      ))}
+                    </Select>
+                  </label>
+                  <label>
+                    Prioridade
+                    <Select {...register('priority')}>
+                      {Object.entries(priorityLabel).map(([v, l]) => (
+                        <option value={v} key={v}>
+                          {l}
+                        </option>
+                      ))}
+                    </Select>
+                  </label>
+                </div>
+                <div className="form-row">
+                  <label>
+                    Data inicial
+                    <Input type="date" {...register('start_date')} />
+                  </label>
+                  <label>
+                    Prazo
+                    <Input type="date" {...register('due_date')} />
+                    <small>{errors.due_date?.message}</small>
+                  </label>
+                </div>
+                <div className="form-row">
+                  <label>
+                    Progresso
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      {...register('progress', { valueAsNumber: true })}
+                    />
+                  </label>
+                  <label>
+                    Orçamento
+                    <Input type="number" min="0" step="0.01" {...register('budget')} />
+                  </label>
+                </div>
+                <footer>
+                  {submitError && (
+                    <div className="form-error" role="alert">
+                      {submitError}
+                    </div>
+                  )}
+                  <Button type="button" className="secondary" onClick={() => setOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button disabled={isSubmitting}>Criar projeto</Button>
+                </footer>
+              </form>
+            )}
           </div>
         </div>
       )}
