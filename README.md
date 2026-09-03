@@ -10,15 +10,15 @@ O DevFlow possui autenticação por email e JWT, workspaces isolados, controle d
 
 Principais funcionalidades:
 
-- cadastro, login, recuperação de senha e perfil;
+- cadastro, login, logout com blacklist do refresh token, recuperação de senha e perfil com preview de avatar;
 - organizações multi-tenant com papéis `OWNER`, `ADMIN` e `MEMBER`;
 - convites de equipe por email em HTML e texto, com aceite seguro, aprovação de alterações e chat interno;
 - clientes, projetos, membros de projeto, atividades e dashboard;
 - tarefas em Kanban, responsáveis, labels, comentários e anexos privados;
 - controle de horas, custos, receitas, despesas, faturas e relatórios CSV;
-- cobranças Pix e assinatura Pro integradas ao Mercado Pago;
+- cobranças Pix responsivas, com resumo antes da confirmação, e assinatura Pro integradas ao Mercado Pago;
 - portal do cliente, convites, entregas, aprovações e notificações;
-- preferências de idioma, timezone, tema e notificações;
+- preferências persistentes de idioma português/inglês, timezone, tema claro/escuro e notificações;
 - health checks, testes automatizados, CI e imagens Docker.
 
 ## Arquitetura e tecnologias
@@ -31,7 +31,9 @@ Principais funcionalidades:
 | Integrações | Gmail/SMTP, Mercado Pago e suporte opcional à WhatsApp Cloud API |
 | Qualidade | Vitest, Testing Library, Django TestCase, Ruff, ESLint, Prettier, Coverage, GitHub Actions |
 
-O frontend envia `X-Organization-ID` nas operações vinculadas ao workspace. O backend valida a membership ativa e aplica o isolamento da organização em cada consulta; a interface não é a fonte de autorização.
+O frontend preserva a organização selecionada, separa o cache do TanStack Query por `organization_id` e envia `X-Organization-ID` nas operações vinculadas ao workspace. O backend valida a membership ativa e aplica o isolamento da organização em cada consulta; o header seleciona o contexto, mas não concede autorização. `OWNER` e `ADMIN` podem criar projetos, enquanto `MEMBER` mantém acesso operacional sem receber permissão administrativa implicitamente.
+
+Ao sair, o frontend remove access token, refresh token, contexto da organização e usuário global antes de aguardar a rede. O backend coloca o refresh token na blacklist; a aplicação substitui a entrada atual do histórico pela tela de login. Avatares JPG/JPEG, PNG e WebP passam por validação de MIME, assinatura do arquivo e limite máximo inclusivo de 10 MB no backend e no frontend.
 
 ## Estrutura
 
@@ -119,8 +121,10 @@ Os convites de equipe são enviados em formato multipart: HTML com botão de ace
 ## Testes e qualidade
 
 ```bash
-python backend/manage.py test apps
-ruff check backend
+python tests/run_all.py
+python -m coverage run --rcfile=pyproject.toml backend/manage.py test apps
+python -m coverage report --rcfile=pyproject.toml
+ruff check backend tests
 
 cd frontend
 npm run lint
@@ -128,7 +132,7 @@ npm run test:coverage
 npm run build
 ```
 
-A integração contínua também verifica migrations, cobertura mínima do backend, auditoria de dependências e build das imagens Docker.
+A suíte cobre regressões de autenticação/logout, seleção e isolamento de organizações, criação de projetos por Owner/Admin, financeiro e limite de queries, criação de cobranças, idioma e upload de avatar no limite de 10 MB. O dashboard financeiro agrega custo e duração no banco, e a página carrega apenas o endpoint da aba ativa para evitar trabalho desnecessário. A integração contínua também verifica migrations, cobertura mínima do backend, auditoria de dependências e build das imagens Docker. Consulte [tests/README.md](tests/README.md) para comandos específicos e critérios de novos testes.
 
 ## Deploy na Vercel
 
@@ -145,7 +149,7 @@ O fallback em [frontend/vercel.json](frontend/vercel.json) entrega `index.html` 
 
 ## Segurança
 
-Tokens de convite são armazenados como hash, uploads exigem autorização, JWTs usam rotação e blacklist, e webhooks de pagamento são validados e processados de forma idempotente. Consulte [SECURITY.md](SECURITY.md) para contato e política de reporte.
+Tokens de convite são armazenados como hash, uploads exigem autorização e validação de conteúdo, JWTs usam rotação e blacklist, e webhooks de pagamento são validados e processados de forma idempotente. Querysets e serializers validam organização, cliente, projeto e papel mesmo quando IDs ou `X-Organization-ID` são enviados manualmente. Consulte [SECURITY.md](SECURITY.md) para contato e política de reporte.
 
 ## Autor
 

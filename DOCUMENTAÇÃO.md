@@ -278,7 +278,7 @@ login(email, senha)
 → componentes consumidores renderizam novamente
 ```
 
-O logout tenta invalidar o refresh no backend, mas sempre limpa a sessão local, inclusive se a rede estiver indisponível. `useAuth()` encapsula `useContext(AuthContext)` e impede uso fora do provider.
+O logout copia o refresh necessário para a chamada remota e imediatamente remove `access`, `refresh`, `organization_id`, a requisição de perfil pendente e o usuário do estado global. Em seguida tenta colocar o refresh na blacklist do backend. A limpeza local continua válida se o token estiver expirado ou a rede indisponível; ao terminar, `window.location.replace('/login')` remove a página protegida da posição atual do histórico. `Protected` volta a validar `isAuthenticated`, portanto atualizar, usar “voltar” ou abrir diretamente uma rota protegida não restaura a sessão encerrada. `useAuth()` encapsula `useContext(AuthContext)` e impede uso fora do provider.
 
 ### Formulários de autenticação
 
@@ -342,7 +342,7 @@ JSON representa objetos e arrays transmitidos entre frontend e backend. Status 2
 - `frontend/src/services/finance.ts`: horas, financeiro, relatórios e Pix público.
 - `frontend/src/features/*/hooks.ts`: adaptam services ao TanStack Query.
 
-Queries leem e guardam cache. Mutations alteram dados e invalidam as chaves relacionadas para que a interface busque uma versão atualizada. Isso separa “como chamar a API” (service) de “como sincronizar a tela” (hook).
+Queries leem e guardam cache. Mutations alteram dados e invalidam as chaves relacionadas para que a interface busque uma versão atualizada. As chaves de work e finance incluem o `organization_id`; dados obtidos em um workspace não podem ser reaproveitados visualmente ao trocar para outro. `organizationService.ensure()` preserva o ID armazenado quando ele ainda aparece entre as organizações acessíveis e só usa a primeira como fallback para seleção ausente ou obsoleta. Isso separa “como chamar a API” (service) de “como sincronizar a tela” (hook).
 
 Exemplo:
 
@@ -351,7 +351,7 @@ ProjectsPage
 → useProjects()
 → projectService.list()
 → GET /projects/
-→ cache ['projects', filtros]
+→ cache ['projects', organization_id, filtros]
 → cards renderizados com projects.map(...)
 ```
 
@@ -421,6 +421,8 @@ Componentes reutilizáveis reduzem repetição e centralizam acessibilidade e ap
 | `pages/PublicPayment.tsx` | cobrança pública somente leitura      |
 | `pages/Settings.tsx`      | perfil, billing e notificações        |
 
+Em Perfil, o `input type="file"` permanece oculto e é acionado por um botão acessível. A seleção valida tamanho/MIME antes de criar uma URL temporária com `URL.createObjectURL`; o avatar mostra preview imediatamente, permite escolher outro arquivo ou cancelar e libera a URL com `URL.revokeObjectURL`. O upload só ocorre no submit do formulário, preservando a foto anterior enquanto a alteração não for confirmada.
+
 ### Perguntas para revisar
 
 1. Quem envia as props de `Kanban`?
@@ -433,7 +435,7 @@ Componentes reutilizáveis reduzem repetição e centralizam acessibilidade e ap
 
 **Arquivo:** `frontend/src/i18n/index.tsx`
 
-`I18nProvider` lê `user.language`, `user.theme` e `user.timezone`. Ele define `document.documentElement.lang`, grava `data-theme` no elemento `<html>` e mantém locale/timezone no `localStorage` para funções de formatação.
+`I18nProvider` lê `user.language`, `user.theme` e `user.timezone`. Antes de o perfil ser restaurado, aceita `preferred_language` salvo para evitar voltar visualmente ao português durante o carregamento. Ele expõe `{ locale, t }`, define `document.documentElement.lang`, grava `data-theme` no elemento `<html>` e mantém locale/timezone no `localStorage`. Navegação, busca e estados compartilhados consomem `t()`; nomes e dados cadastrados pelo usuário não são traduzidos.
 
 ```text
 Usuário salva preferência
@@ -446,6 +448,8 @@ Usuário salva preferência
 ```
 
 O modo `system` usa `@media (prefers-color-scheme: dark)`. Não existe um `ThemeContext` separado: o tema pertence ao perfil do usuário e é aplicado pelo `I18nProvider`.
+
+A preferência é persistida pelo `PATCH /api/auth/me/` e espelhada em `preferred_language`. Assim, ela permanece ao navegar, atualizar e iniciar uma nova sessão. Novos textos de interface devem entrar no catálogo de `frontend/src/i18n/index.tsx` e ser renderizados por `t()`, sem aplicar tradução a nomes de clientes, projetos, pessoas ou descrições.
 
 ### Organização do CSS
 
@@ -543,6 +547,7 @@ Esta seção é o mapa para estudar cada domínio sem confundir responsabilidade
 - `RegisterSerializer.create()` usa o manager, portanto nunca grava a senha recebida diretamente.
 - `LoginSerializer.validate()` autentica email/senha e rejeita conta inativa.
 - `LoginView` emite access/refresh do SimpleJWT; `LogoutView` coloca o refresh na blacklist; `MeView` lê e atualiza o perfil.
+- `UserSerializer` trata campos de identidade e timestamps como somente leitura. Avatar aceita no máximo 10 MB inclusive e apenas MIME JPEG/PNG/WebP cuja assinatura binária corresponda ao formato declarado.
 - `PasswordResetView` cria UID/token de uso único e dispara `send_password_reset_email`; a confirmação valida ambos antes de trocar a senha.
 
 ### `organizations`: tenant, equipe e chat
@@ -580,6 +585,7 @@ Papéis reais de `OrganizationMembership.Role`:
 **Arquivos:** `backend/apps/work/models.py`, `serializers.py`, `views.py`, `permissions.py`, `context.py`, `services.py`, `urls.py` e `tests.py`.
 
 - `ClientViewSet` e `ProjectViewSet` filtram primeiro por organização e depois por acesso do papel.
+- `ProjectAccessPermission` permite escrita para `OWNER` e `ADMIN`; `MEMBER` pode consultar somente projetos em que participa e não recebe criação administrativa. O serializer confirma que o cliente pertence ao workspace resolvido pelo header.
 - `ProjectMember` implementa a relação N:N explícita entre usuário e projeto.
 - `TaskViewSet.base_queryset_for()` é a fonte compartilhada de isolamento de tarefas; lista/detalhe e ações partem dela.
 - `TaskSerializer` valida projeto, responsáveis e labels dentro do mesmo tenant.
@@ -594,6 +600,8 @@ Papéis reais de `OrganizationMembership.Role`:
 - `TenantViewSet` injeta organização no serializer e restringe o queryset; `FinancePermission` e `WorkspaceStaffPermission` separam leitura financeira e administração.
 - `TimeEntryViewSet.start()` impede dois timers ativos por usuário/organização; `stop()` calcula duração e `summary()` agrega horas e valores.
 - `InvoiceSerializer` valida cliente/projeto, cria itens e recalcula subtotal/total no backend.
+- `finance_dashboard` agrega duração e custo de horas em SQL, em vez de materializar todos os lançamentos em Python. O número de queries permanece limitado mesmo com aumento de registros.
+- O frontend habilita somente a query da aba financeira visível. A estrutura e as abas aparecem sem esperar receitas, despesas e faturas que ainda não foram solicitadas.
 - `generate_pix()` cria uma tentativa `InvoicePayment`; `process_mercado_pago_payment()` confirma referência, moeda, valor e idempotência antes de marcar a fatura.
 - `deliver_invoice_payment` envia cobrança fora da resposta HTTP; falhas externas permanecem observáveis sem falsificar estado pago.
 
@@ -796,6 +804,8 @@ Migrations são o histórico versionado do esquema. `python manage.py makemigrat
 
 O frontend seleciona o workspace com `X-Organization-ID`, mas esse header não concede acesso. `backend/apps/work/context.py`, querysets e permissions consultam uma `OrganizationMembership` ativa. OWNER, ADMIN, MEMBER e CLIENT recebem visões diferentes; membros comuns ainda podem depender de `ProjectMember`.
 
+O ID selecionado deve existir na lista devolvida por `/api/organizations/`. Um valor local obsoleto cai para a primeira organização acessível; um header apontando para organização sem membership produz 403. Caches de clientes, projetos, dashboard e financeiro incluem a organização, evitando vazamento visual por reutilização de resposta anterior.
+
 Esse desenho evita IDOR: trocar manualmente um ID na URL ou no header não deve revelar objeto de outra organização. A interface esconder um menu é apenas UX; a proteção real precisa estar no backend.
 
 Outras defesas em `settings.py`:
@@ -833,12 +843,15 @@ ProjectsPage exige cliente
 → POST /api/projects/ + header de organização
 → ProjectViewSet valida RBAC, cliente e limite do plano
 → ProjectSerializer grava Project
-→ cache de projetos é invalidado
+→ criador entra como PROJECT_MANAGER
+→ caches de projetos e dashboard da organização são invalidados
 → ProjectDetail abre Kanban
 → useCreateTask → POST /api/tasks/
 → TaskSerializer valida projeto, responsáveis e labels
 → tarefa aparece na coluna correspondente
 ```
+
+Falhas de serializer, permissão ou plano são normalizadas por `getApiErrorDetails` e mostradas no formulário; o frontend não converte um 400/403 em sucesso. Um cliente de outra organização continua retornando erro de validação, e um header de organização sem membership retorna 403.
 
 ### Mover uma tarefa
 
@@ -855,7 +868,10 @@ arrastar/ação no Kanban
 ### Gerar e pagar uma cobrança Pix
 
 ```text
-OWNER/ADMIN cria Invoice e itens
+OWNER abre Financeiro; somente a query da aba ativa é executada
+→ abre Nova cobrança e seleciona cliente/projeto compatíveis
+→ formulário mostra valor e vencimento no resumo responsivo
+→ OWNER cria Invoice e itens
 → POST /api/invoices/:id/generate-payment/
 → backend calcula valor (Decimal)
 → Mercado Pago cria Pix
@@ -869,6 +885,8 @@ OWNER/ADMIN cria Invoice e itens
 ```
 
 O frontend nunca decide que uma cobrança foi paga. Polling público melhora a experiência, mas webhook validado é a confirmação confiável.
+
+O formulário mantém cliente, projeto opcional, descrição, valor, vencimento, liberação e opções de geração existentes. O novo layout altera apenas hierarquia visual, mensagens de erro e responsividade; subtotal, total, permissões e geração Pix continuam sendo regras do backend.
 
 ### Assinatura Pro
 
@@ -1109,7 +1127,9 @@ Há três camadas complementares:
 
 Os testes backend criam um banco efêmero e exercitam serializers, views, permissions e ORM juntos. `APITestCase` simula HTTP sem chamar um deployment; `TransactionTestCase` é usado quando o comportamento assíncrono do Channels precisa de transações reais. `WebsocketCommunicator` testa conexão JWT válida e rejeição de token inválido.
 
-No frontend, jsdom fornece DOM sem abrir navegador. Testing Library busca elementos como uma pessoa faria, e `user-event` dispara interação. `vi.mock` substitui fronteiras externas: os testes de autenticação controlam respostas da API; os de pagamento não criam Pix; os de equipe simulam services. Um adapter Axios local permite observar headers e uma resposta 401 sem rede real.
+No frontend, jsdom fornece DOM sem abrir navegador. Testing Library busca elementos como uma pessoa faria, e `user-event` dispara interação. `vi.mock` substitui fronteiras externas: os testes de autenticação controlam respostas da API; os de pagamento não criam Pix; os de equipe simulam services. Um adapter Axios local permite observar headers e uma resposta 401 sem rede real. Regressões específicas verificam limpeza imediata do logout, persistência pt-BR/en, workspace selecionado, ausência de requests financeiras para abas inativas e fronteira de 10 MB do avatar.
+
+No backend, testes adicionais exercitam criação de projeto por admin secundário, header incorreto, isolamento entre tenants, blacklist do refresh, imagem com assinatura falsa, tamanho exato/acima de 10 MB e quantidade limitada de queries no dashboard financeiro. O teste de performance verifica queries, não tempo absoluto, para evitar instabilidade entre máquinas.
 
 `tests/fixtures.py` produz nomes temporários únicos com UUID para evitar colisões em ambientes controlados. O runner remoto permanece somente leitura em produção: `tests/config.py` exige HTTPS, bloqueia escrita e lê URLs/credenciais por variáveis sem imprimi-las. O smoke é opt-in localmente e cobre health, rotas diretas e preflight CORS.
 
